@@ -1,18 +1,16 @@
 import Foundation
 
-/// One completed sprint enduro run.
+/// One completed timed test. Tests are ridden once each, in order.
 nonisolated struct SprintRun: Identifiable, Equatable {
+    let id = UUID()
     let test: Int
-    let number: Int
     let start: Date
     let end: Date
     let distance: Double // meters
     let averageHeartRate: Int?
     let maxHeartRate: Int?
 
-    /// Short form for tight spaces, e.g. "T1 R2".
-    var id: String { "T\(test) R\(number)" }
-    var label: String { "Test \(test) run \(number)" }
+    var label: String { "Test \(test)" }
     var duration: TimeInterval { end.timeIntervalSince(start) }
     /// Includes any stops, which is what matters for racing.
     var averageSpeed: Double { duration > 0 ? distance / duration : 0 }

@@ -69,13 +69,13 @@ A timed race over a multi-mile woods loop. Laps are counted at a scoring chute.
 
 ### 3. Sprint enduro
 
-Multiple timed runs on a couple of different special tests, with pit time between.
+Several timed tests (8+ is common), ridden once each **in order**, separated by untimed transfer sections. Score is the sum of test times. Reference: moto-tally "Check-by-Check Score" view (e.g. 2025 Bartlett Enduro, IERA): K checks are untimed, E checks are the timed tests.
 
 - **Arm → auto-start:** The rider arms the test (bar button). The clock starts when the bike starts moving: GPS speed > ~5 mph sustained ~1 s. Because GPS lags ~1 s, backdate the start to the first fix of the current rolling streak (speed ≥ min moving speed), capped at 3 s. Fix timestamps are measurement times, so this also removes delivery lag. CoreMotion onset detection is deferred: 2-stroke idle vibration makes accelerometer onset unreliable. Revisit only if replayed logs show GPS-only starts are off.
 - **Stop:** The rider presses the bar button after crossing the finish. The run is saved and the app returns to idle, ready to arm again.
-- Tests are numbered, not lettered. Label runs automatically (Test 1 run 1, Test 2 run 1, …; "T1 R2" where space is tight). Allow renaming later.
+- Tests are numbered, not lettered. The app auto-advances Test 1, 2, 3, … after each run, with −/+ to correct if a test is skipped or cancelled. No fixed test count.
 - **Display:** HR, elapsed time, avg speed, test distance.
-- Post-session: compare runs of the same test.
+- Post-session: per-test times plus running total, like moto-tally's check-by-check view.
 
 ## GPS handling (important)
 

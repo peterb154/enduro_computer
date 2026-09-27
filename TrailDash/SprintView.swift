@@ -23,20 +23,23 @@ struct SprintView: View {
         .sensoryFeedback(.impact(weight: .heavy), trigger: sprint.timer.state)
     }
 
-    // MARK: Idle: pick a test, review runs, arm
+    // MARK: Idle: next test, results so far, arm
 
     private var idle: some View {
         VStack(spacing: 16) {
             HStack(spacing: 12) {
-                ForEach(SprintSession.tests, id: \.self) { test in
-                    testButton(test)
-                }
+                stepButton("minus") { sprint.changeNextTest(by: -1) }
+                Text("NEXT: TEST \(sprint.nextTest)")
+                    .font(.system(size: 28, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                stepButton("plus") { sprint.changeNextTest(by: 1) }
             }
             if !sprint.runs.isEmpty {
-                RunList(runs: sprint.runs)
+                RunList(runs: sprint.runs, total: sprint.totalTime)
             }
             Button { sprint.arm() } label: {
-                BigButtonLabel(title: "ARM T\(sprint.selectedTest) R\(sprint.runNumber(for: sprint.selectedTest))", color: .yellow)
+                BigButtonLabel(title: "ARM TEST \(sprint.nextTest)", color: .yellow)
             }
             .buttonStyle(.plain)
 
@@ -53,14 +56,13 @@ struct SprintView: View {
         }
     }
 
-    private func testButton(_ test: Int) -> some View {
-        let selected = test == sprint.selectedTest
-        return Button { sprint.selectedTest = test } label: {
-            Text("T\(test)")
-                .font(.system(size: 32, weight: .heavy))
-                .frame(maxWidth: .infinity, minHeight: 64)
-                .foregroundStyle(selected ? .black : .white)
-                .background(selected ? Color.white : Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
+    private func stepButton(_ systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 24, weight: .bold))
+                .frame(width: 64, height: 56)
+                .foregroundStyle(.white)
+                .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }
@@ -72,7 +74,7 @@ struct SprintView: View {
             Text("ARMED")
                 .font(.system(size: 72, weight: .heavy))
                 .foregroundStyle(.yellow)
-            Text("Test \(sprint.selectedTest) run \(sprint.runNumber(for: sprint.selectedTest)) · starts when you go")
+            Text("Test \(sprint.nextTest) · starts when you go")
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.gray)
             BigButtonLabel(title: "HOLD TO DISARM", color: .gray)
@@ -106,21 +108,24 @@ struct SprintView: View {
     }
 }
 
-/// Runs, newest first, with each run's gap to the best run of the same test.
+/// Test times, newest first, with the running total the event is scored on.
 struct RunList: View {
     let runs: [SprintRun]
+    let total: TimeInterval
 
     var body: some View {
         ScrollView {
             Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 6) {
+                GridRow {
+                    Text("Total")
+                    Text(Format.duration(total))
+                    Text("")
+                }
+                .foregroundStyle(.yellow)
                 ForEach(runs.reversed()) { run in
-                    let best = runs.filter { $0.test == run.test }.map(\.duration).min() ?? run.duration
-                    let isBest = run.duration == best
                     GridRow {
-                        Text(run.id)
+                        Text("T\(run.test)")
                         Text(Format.runTime(run.duration))
-                        Text(isBest ? "best" : "+" + String(format: "%.1f", run.duration - best))
-                            .foregroundStyle(isBest ? .green : .gray)
                         Text("\(Format.mph(run.averageSpeed)) mph")
                             .foregroundStyle(.gray)
                     }

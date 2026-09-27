@@ -104,10 +104,9 @@ struct SprintTimerTests {
     }
 
     @Test func runAverageSpeedIncludesStops() {
-        let run = SprintRun(test: 1, number: 2, start: t0, end: t0.addingTimeInterval(100),
+        let run = SprintRun(test: 2, start: t0, end: t0.addingTimeInterval(100),
                             distance: 1000, averageHeartRate: nil, maxHeartRate: nil)
         #expect(run.averageSpeed == 10)
-        #expect(run.label == "Test 1 run 2")
-        #expect(run.id == "T1 R2")
+        #expect(run.label == "Test 2")
     }
 }

@@ -1,13 +1,12 @@
 import Foundation
 
-/// A sprint enduro session: many armed/timed runs across a few tests, with one
-/// raw log covering the whole day (pit time included). The session opens on the
-/// first arm and closes when the rider ends it.
+/// A sprint enduro session: tests ridden once each, in order (Test 1, 2, 3, ...),
+/// with one raw log covering the whole day, transfer and pit time included.
+/// The session opens on the first arm and closes when the rider ends it.
 @Observable
 final class SprintSession {
-    static let tests = [1, 2, 3]
-
-    var selectedTest = 1
+    /// The test that the next arm will time. Advances after each run.
+    private(set) var nextTest = 1
     private(set) var timer = SprintTimer()
     private(set) var runs: [SprintRun] = []
     private(set) var log: RideLog?
@@ -21,21 +20,24 @@ final class SprintSession {
 
     var isSessionOpen: Bool { log != nil }
 
-    func runNumber(for test: Int) -> Int {
-        runs.filter { $0.test == test }.count + 1
-    }
+    /// Sum of all test times: what the event is scored on.
+    var totalTime: TimeInterval { runs.map(\.duration).reduce(0, +) }
 
-    private var nextRunLabel: String { "Test \(selectedTest) run \(runNumber(for: selectedTest))" }
+    /// Fix the count if a test was skipped or cancelled.
+    func changeNextTest(by delta: Int) {
+        nextTest = max(1, nextTest + delta)
+    }
 
     func arm() {
         if log == nil {
             runs = []
+            nextTest = 1
             finishedLog = nil
             log = RideLog(startedAt: .now)
             location.setBackgroundUpdates(true)
         }
         timer.arm()
-        log?.append(.mark("arm \(nextRunLabel)", at: .now))
+        log?.append(.mark("arm Test \(nextTest)", at: .now))
     }
 
     func disarm() {
@@ -47,8 +49,7 @@ final class SprintSession {
     func stop(at time: Date) {
         guard let result = timer.stop() else { return }
         let run = SprintRun(
-            test: selectedTest,
-            number: runNumber(for: selectedTest),
+            test: nextTest,
             start: result.start,
             end: max(time, result.start),
             distance: result.stats.distance,
@@ -56,6 +57,7 @@ final class SprintSession {
             maxHeartRate: result.stats.maxHeartRate
         )
         runs.append(run)
+        nextTest += 1
         log?.append(.mark("stop \(run.label)", at: run.end))
     }
 
@@ -74,7 +76,7 @@ final class SprintSession {
         timer.add(fix)
         if !wasRunning, case .running(let start) = timer.state {
             // Logged after the fact with the backdated start time.
-            log?.append(.mark("start \(nextRunLabel)", at: start))
+            log?.append(.mark("start Test \(nextTest)", at: start))
         }
     }
 

@@ -49,9 +49,9 @@ final class SprintSession {
         paces.resetToFirstTestPace()
     }
 
-    /// Changes the pace from the next test onward.
-    func changePace(by delta: Int) {
-        paces.setPace(max(1, paceMph + delta), from: nextTest)
+    /// Sets the pace for `test` and every later test until the next change.
+    func setPace(_ mph: Int, from test: Int) {
+        paces.setPace(max(1, mph), from: test)
     }
 
     func arm() {

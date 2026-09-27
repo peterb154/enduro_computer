@@ -20,19 +20,38 @@ struct RaceSetupView: View {
                     Text("Race start is the time the roll chart is based on. Your due times are the roll chart times plus your offset.")
                 }
 
-                Section("Test start times (from roll chart)") {
+                Section {
+                    if sprint.race.rollChart.isEmpty {
+                        paceStepper(label: "All tests", test: 1)
+                    }
                     ForEach(sprint.race.rollChart.indices, id: \.self) { index in
-                        HStack {
-                            DatePicker("Test \(index + 1)", selection: timeBinding($sprint.race.rollChart[index]),
-                                       displayedComponents: .hourAndMinute)
-                            Text("→ \(Format.clock(minutes: sprint.race.dueMinutes(for: index + 1) ?? 0))")
-                                .monospacedDigit()
-                                .foregroundStyle(.secondary)
+                        let test = index + 1
+                        VStack(alignment: .leading) {
+                            HStack {
+                                DatePicker("Test \(test)", selection: timeBinding($sprint.race.rollChart[index]),
+                                           displayedComponents: .hourAndMinute)
+                                Text("→ \(Format.clock(minutes: sprint.race.dueMinutes(for: test) ?? 0))")
+                                    .monospacedDigit()
+                                    .foregroundStyle(.secondary)
+                            }
+                            paceStepper(label: "Pace", test: test)
                         }
                     }
                     Button("Add test") { sprint.race.addTest() }
                     if !sprint.race.rollChart.isEmpty {
                         Button("Remove last test", role: .destructive) { sprint.race.rollChart.removeLast() }
+                    }
+                } header: {
+                    Text("Tests (from roll chart)")
+                } footer: {
+                    Text("A pace applies to that test and every later test until you change it. Tests past the last one listed keep the last pace.")
+                }
+
+                Section {
+                    LabeledContent("Paces", value: sprint.paces.summary)
+                        .monospacedDigit()
+                    if sprint.paces.varies {
+                        Button("Reset all paces to Test 1's", role: .destructive) { sprint.resetPaces() }
                     }
                 }
             }
@@ -40,6 +59,14 @@ struct RaceSetupView: View {
             .toolbar {
                 Button("Done") { dismiss() }
             }
+        }
+    }
+
+    private func paceStepper(label: String, test: Int) -> some View {
+        Stepper(value: Binding(get: { sprint.paces.pace(for: test) },
+                               set: { sprint.setPace($0, from: test) }),
+                in: 1...99) {
+            Text("\(label): \(sprint.paces.pace(for: test)) mph").monospacedDigit()
         }
     }
 

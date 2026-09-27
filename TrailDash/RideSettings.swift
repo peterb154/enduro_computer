@@ -14,6 +14,9 @@ nonisolated struct RideSettings {
     var sprintStartSustain: TimeInterval = 1
     /// The start is backdated to when the bike began rolling, but never further than this.
     var sprintMaxBackdate: TimeInterval = 3
+    /// Rolling off later than this after the due time is treated as a setup
+    /// mismatch (wrong test or race), and the rolling time is used instead.
+    var sprintMaxLateStart: TimeInterval = 3600
     /// Pace for scoring tests that have no roll chart times entered.
     var sprintFallbackPaceMph: Double = 24
 

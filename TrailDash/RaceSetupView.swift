@@ -6,6 +6,7 @@ struct RaceSetupView: View {
     let location: LocationTracker
     @Environment(\.dismiss) private var dismiss
     @State private var path: [UUID] = []
+    @State private var confirmingReset = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -27,6 +28,7 @@ struct RaceSetupView: View {
                     Button("New race") { path.append(sprint.newRace()) }
                 }
                 practiceSection
+                sessionSection
             }
             .navigationTitle("Races")
             .navigationDestination(for: UUID.self) { id in
@@ -37,6 +39,20 @@ struct RaceSetupView: View {
             .toolbar {
                 Button("Done") { dismiss() }
             }
+        }
+    }
+
+    private var sessionSection: some View {
+        Section {
+            Button("Reset session", role: .destructive) { confirmingReset = true }
+                .confirmationDialog("Clear \(sprint.runs.count) result(s) and go back to Test 1?",
+                                    isPresented: $confirmingReset, titleVisibility: .visible) {
+                    Button("Reset", role: .destructive) { sprint.reset() }
+                }
+        } header: {
+            Text("Session")
+        } footer: {
+            Text("Ends the current session (its log is still saved and shareable), clears results, and starts again at Test 1. Saved races are kept.")
         }
     }
 

@@ -129,4 +129,36 @@ struct SprintTimerTests {
                             distance: 1609.344, averageHeartRate: nil, maxHeartRate: nil, idealTime: nil)
         #expect(abs(run.timeDropped - 40) < 0.01)
     }
+
+    @Test func lateRiderIsTimedFromDueMinute() {
+        let due = t0
+        #expect(officialStart(rolling: t0.addingTimeInterval(95), due: due) == due)
+    }
+
+    @Test func earlyOrOnTimeRiderIsTimedFromRolling() {
+        let rolling = t0.addingTimeInterval(-4)
+        #expect(officialStart(rolling: rolling, due: t0) == rolling)
+        #expect(officialStart(rolling: t0, due: t0) == t0)
+    }
+
+    @Test func noDueTimeUsesRolling() {
+        let rolling = t0.addingTimeInterval(30)
+        #expect(officialStart(rolling: rolling, due: nil) == rolling)
+    }
+
+    @Test func implausiblyLateUsesRolling() {
+        // Over an hour late: probably the wrong test number or race selected.
+        let rolling = t0.addingTimeInterval(3 * 3600)
+        #expect(officialStart(rolling: rolling, due: t0) == rolling)
+    }
+
+    @Test func setStartMovesRunningStartOnly() {
+        var timer = armed()
+        timer.setStart(t0) // not running yet: ignored
+        #expect(timer.state == .armed)
+        timer.add(fix(10, speed: 3))
+        timer.add(fix(11, speed: 3))
+        timer.setStart(t0)
+        #expect(timer.state == .running(start: t0))
+    }
 }

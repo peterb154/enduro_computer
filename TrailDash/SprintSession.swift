@@ -115,13 +115,26 @@ final class SprintSession {
         nextTest = 1
     }
 
+    /// Start over: close any open session (its log is still written and shareable),
+    /// clear results, and go back to Test 1. Saved races are kept.
+    func reset() {
+        timer.disarm()
+        if isSessionOpen { endSession() }
+        runs = []
+        nextTest = 1
+    }
+
     func add(_ fix: Fix) {
         guard isSessionOpen else { return }
         log?.append(.fix(fix))
         let wasRunning = timer.isRunning
         timer.add(fix)
-        if !wasRunning, case .running(let start) = timer.state {
-            // Logged after the fact with the backdated start time.
+        if !wasRunning, case .running(let rolling) = timer.state {
+            // Late riders are timed from their due minute, like the official clock.
+            let start = officialStart(rolling: rolling, due: nextTestDue(today: rolling))
+            timer.setStart(start)
+            // Logged after the fact with the backdated start times.
+            log?.append(.mark("rolled Test \(nextTest)", at: rolling))
             log?.append(.mark("start Test \(nextTest)", at: start))
         }
     }

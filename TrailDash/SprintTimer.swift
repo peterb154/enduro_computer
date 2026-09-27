@@ -25,6 +25,14 @@ nonisolated struct SprintRun: Identifiable, Equatable {
     }
 }
 
+/// When the test clock officially started. A rider who leaves late is timed from
+/// their due minute; early or on time, from when they rolled. No due time (or a
+/// due time implausibly far back) means rolling time.
+nonisolated func officialStart(rolling: Date, due: Date?, settings: RideSettings = .standard) -> Date {
+    guard let due, due < rolling, rolling.timeIntervalSince(due) <= settings.sprintMaxLateStart else { return rolling }
+    return due
+}
+
 /// Time lost against a pace: elapsed time minus the time the distance
 /// takes at pace speed. Positive means behind pace; negative, ahead.
 nonisolated func timeDropped(elapsed: TimeInterval, distance: Double, paceMph: Double) -> TimeInterval {
@@ -86,6 +94,12 @@ nonisolated struct SprintTimer {
     mutating func add(heartRate: Int) {
         guard isRunning else { return }
         stats.add(heartRate: heartRate)
+    }
+
+    /// Moves the start of a running test, e.g. back to the rider's due time when late.
+    mutating func setStart(_ start: Date) {
+        guard isRunning else { return }
+        state = .running(start: start)
     }
 
     /// Ends the run and returns its start time and stats, or nil if not running.

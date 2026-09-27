@@ -89,7 +89,7 @@ struct RaceEditor: View {
                     Button("Remove last test", role: .destructive) { race.tests.removeLast() }
                 }
             } footer: {
-                Text("Start: the whole-minute line where the test starts. End mile: the \"At\" mileage of the next reset. End time only if the chart prints it. Type times as digits: 94600 is 9:46:00.")
+                Text("Start: the whole-minute line where the test starts. End mile: the \"At\" mileage of the next reset. End time only if the chart prints it. Type times as digits (hhmmss): 130400 is 13:04:00.")
             }
         }
         .scrollDismissesKeyboard(.immediately)
@@ -140,7 +140,7 @@ private struct ChartTimeField: View {
     let label: String
     @Binding var seconds: Int?
     let raceStartMinutes: Int
-    var placeholder = "94600"
+    var placeholder = "hhmmss"
     @State private var text = ""
 
     var body: some View {

@@ -74,7 +74,8 @@ Several timed tests (8+ is common), ridden once each **in order**, separated by 
 - **Arm → auto-start:** The rider arms the test (bar button). The clock starts when the bike starts moving: GPS speed > ~5 mph sustained ~1 s. Because GPS lags ~1 s, backdate the start to the first fix of the current rolling streak (speed ≥ min moving speed), capped at 3 s. Fix timestamps are measurement times, so this also removes delivery lag. CoreMotion onset detection is deferred: 2-stroke idle vibration makes accelerometer onset unreliable. Revisit only if replayed logs show GPS-only starts are off.
 - **Stop:** The rider presses the bar button after crossing the finish. The run is saved and the app returns to idle, ready to arm again.
 - Tests are numbered, not lettered. The app auto-advances Test 1, 2, 3, … after each run, with −/+ to correct if a test is skipped or cancelled. No fixed test count.
-- **Display:** HR, elapsed time, avg speed, test distance.
+- **Pace:** Each test has a pace (speed average, whole mph, e.g. 24). Score is time dropped = elapsed − distance ÷ pace (positive = behind). Pace is set with −/+ and carries forward to later tests until changed; each run records its pace. Distance is GPS-measured for now (route-sheet test lengths could replace it later).
+- **Display:** HR, elapsed time, time dropped vs pace (red behind / green ahead), avg speed, test distance.
 - Post-session: per-test times plus running total, like moto-tally's check-by-check view.
 
 ## GPS handling (important)

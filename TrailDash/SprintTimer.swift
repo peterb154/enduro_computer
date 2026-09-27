@@ -9,11 +9,21 @@ nonisolated struct SprintRun: Identifiable, Equatable {
     let distance: Double // meters
     let averageHeartRate: Int?
     let maxHeartRate: Int?
+    let paceMph: Int
 
     var label: String { "Test \(test)" }
     var duration: TimeInterval { end.timeIntervalSince(start) }
     /// Includes any stops, which is what matters for racing.
     var averageSpeed: Double { duration > 0 ? distance / duration : 0 }
+    var timeDropped: TimeInterval { TrailDash.timeDropped(elapsed: duration, distance: distance, paceMph: paceMph) }
+}
+
+/// Time lost against the pace: elapsed time minus the time the distance
+/// takes at pace speed. Positive means behind pace (the score); negative, ahead.
+nonisolated func timeDropped(elapsed: TimeInterval, distance: Double, paceMph: Int) -> TimeInterval {
+    guard paceMph > 0 else { return 0 }
+    let paceSpeed = Double(paceMph) / 2.236936 // m/s
+    return elapsed - distance / paceSpeed
 }
 
 /// Arm -> auto-start -> stop state machine for one sprint enduro test.

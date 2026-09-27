@@ -14,6 +14,8 @@ nonisolated struct RideSettings {
     var sprintStartSustain: TimeInterval = 1
     /// The start is backdated to when the bike began rolling, but never further than this.
     var sprintMaxBackdate: TimeInterval = 3
+    /// Default pace (speed average) for timed tests. Race pace is always stated in whole mph.
+    var sprintPaceMph = 24
 
     static let standard = RideSettings()
 }

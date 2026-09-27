@@ -39,6 +39,7 @@ struct HeartRateNumber: View {
 struct BigStat: View {
     let value: String
     let label: String
+    var color: Color = .white
 
     var body: some View {
         VStack(spacing: 0) {
@@ -47,7 +48,7 @@ struct BigStat: View {
                 .monospacedDigit()
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
-                .foregroundStyle(.white)
+                .foregroundStyle(color)
             Text(label)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(.gray)

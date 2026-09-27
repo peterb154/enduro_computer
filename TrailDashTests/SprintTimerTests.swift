@@ -105,8 +105,15 @@ struct SprintTimerTests {
 
     @Test func runAverageSpeedIncludesStops() {
         let run = SprintRun(test: 2, start: t0, end: t0.addingTimeInterval(100),
-                            distance: 1000, averageHeartRate: nil, maxHeartRate: nil)
+                            distance: 1000, averageHeartRate: nil, maxHeartRate: nil, paceMph: 24)
         #expect(run.averageSpeed == 10)
         #expect(run.label == "Test 2")
+    }
+
+    @Test func timeDroppedAgainstPace() {
+        // One mile at 24 mph takes 150 s.
+        #expect(abs(timeDropped(elapsed: 190, distance: 1609.344, paceMph: 24) - 40) < 0.01)
+        #expect(abs(timeDropped(elapsed: 140, distance: 1609.344, paceMph: 24) + 10) < 0.01)
+        #expect(timeDropped(elapsed: 100, distance: 1000, paceMph: 0) == 0)
     }
 }

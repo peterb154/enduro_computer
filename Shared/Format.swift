@@ -15,6 +15,12 @@ nonisolated enum Format {
         return String(format: "%d:%02d.%d", tenths / 600, (tenths % 600) / 10, tenths % 10)
     }
 
+    /// "+1:05" behind pace, "-0:12" ahead. Whole seconds, truncated toward zero.
+    static func signedMinutes(_ seconds: TimeInterval) -> String {
+        let total = Int(abs(seconds))
+        return String(format: "%@%d:%02d", seconds < 0 ? "-" : "+", total / 60, total % 60)
+    }
+
     /// h:mm:ss, or m:ss under an hour.
     static func duration(_ seconds: TimeInterval) -> String {
         let total = Int(seconds)

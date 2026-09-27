@@ -20,4 +20,10 @@ struct FormatTests {
         #expect(Format.runTime(201.47) == "3:21.4")
         #expect(Format.runTime(9.05) == "0:09.0")
     }
+
+    @Test func signedMinutesForPace() {
+        #expect(Format.signedMinutes(65.9) == "+1:05")
+        #expect(Format.signedMinutes(-12.4) == "-0:12")
+        #expect(Format.signedMinutes(0) == "+0:00")
+    }
 }

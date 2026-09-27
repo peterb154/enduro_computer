@@ -35,8 +35,16 @@ struct SprintView: View {
                     .frame(maxWidth: .infinity)
                 stepButton("plus") { sprint.changeNextTest(by: 1) }
             }
+            HStack(spacing: 12) {
+                stepButton("minus") { sprint.changePace(by: -1) }
+                Text("PACE \(sprint.paceMph) MPH")
+                    .font(.system(size: 28, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                stepButton("plus") { sprint.changePace(by: 1) }
+            }
             if !sprint.runs.isEmpty {
-                RunList(runs: sprint.runs, total: sprint.totalTime)
+                RunList(runs: sprint.runs, total: sprint.totalTime, totalDropped: sprint.totalDropped)
             }
             Button { sprint.arm() } label: {
                 BigButtonLabel(title: "ARM TEST \(sprint.nextTest)", color: .yellow)
@@ -74,7 +82,7 @@ struct SprintView: View {
             Text("ARMED")
                 .font(.system(size: 72, weight: .heavy))
                 .foregroundStyle(.yellow)
-            Text("Test \(sprint.nextTest) · starts when you go")
+            Text("Test \(sprint.nextTest) · \(sprint.paceMph) mph pace · starts when you go")
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.gray)
             BigButtonLabel(title: "HOLD TO DISARM", color: .gray)
@@ -89,8 +97,13 @@ struct SprintView: View {
             TimelineView(.periodic(from: .now, by: 0.1)) { context in
                 let elapsed = context.date.timeIntervalSince(start)
                 let distance = sprint.timer.stats.distance
+                let dropped = timeDropped(elapsed: elapsed, distance: distance, paceMph: sprint.paceMph)
                 VStack(spacing: 8) {
-                    BigStat(value: Format.runTime(elapsed), label: "TIME")
+                    HStack {
+                        BigStat(value: Format.runTime(elapsed), label: "TIME")
+                        BigStat(value: Format.signedMinutes(dropped), label: "DROPPED",
+                                color: dropped > 0 ? .red : .green)
+                    }
                     HStack {
                         BigStat(value: Format.mph(elapsed > 0 ? distance / elapsed : 0), label: "AVG MPH")
                         BigStat(value: Format.miles(distance), label: "MI")
@@ -112,6 +125,7 @@ struct SprintView: View {
 struct RunList: View {
     let runs: [SprintRun]
     let total: TimeInterval
+    let totalDropped: TimeInterval
 
     var body: some View {
         ScrollView {
@@ -119,6 +133,7 @@ struct RunList: View {
                 GridRow {
                     Text("Total")
                     Text(Format.duration(total))
+                    Text(Format.signedMinutes(totalDropped))
                     Text("")
                 }
                 .foregroundStyle(.yellow)
@@ -126,7 +141,9 @@ struct RunList: View {
                     GridRow {
                         Text("T\(run.test)")
                         Text(Format.runTime(run.duration))
-                        Text("\(Format.mph(run.averageSpeed)) mph")
+                        Text(Format.signedMinutes(run.timeDropped))
+                            .foregroundStyle(run.timeDropped > 0 ? .red : .green)
+                        Text("\(Format.mph(run.averageSpeed))/\(run.paceMph)")
                             .foregroundStyle(.gray)
                     }
                 }

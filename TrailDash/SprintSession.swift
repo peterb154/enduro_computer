@@ -7,6 +7,8 @@ import Foundation
 final class SprintSession {
     /// The test that the next arm will time. Advances after each run.
     private(set) var nextTest = 1
+    /// Pace for the next test. Sticky: carries forward until changed.
+    private(set) var paceMph = RideSettings.standard.sprintPaceMph
     private(set) var timer = SprintTimer()
     private(set) var runs: [SprintRun] = []
     private(set) var log: RideLog?
@@ -22,10 +24,15 @@ final class SprintSession {
 
     /// Sum of all test times: what the event is scored on.
     var totalTime: TimeInterval { runs.map(\.duration).reduce(0, +) }
+    var totalDropped: TimeInterval { runs.map(\.timeDropped).reduce(0, +) }
 
     /// Fix the count if a test was skipped or cancelled.
     func changeNextTest(by delta: Int) {
         nextTest = max(1, nextTest + delta)
+    }
+
+    func changePace(by delta: Int) {
+        paceMph = max(1, paceMph + delta)
     }
 
     func arm() {
@@ -37,7 +44,7 @@ final class SprintSession {
             location.setBackgroundUpdates(true)
         }
         timer.arm()
-        log?.append(.mark("arm Test \(nextTest)", at: .now))
+        log?.append(.mark("arm Test \(nextTest) pace \(paceMph) mph", at: .now))
     }
 
     func disarm() {
@@ -54,7 +61,8 @@ final class SprintSession {
             end: max(time, result.start),
             distance: result.stats.distance,
             averageHeartRate: result.stats.averageHeartRate,
-            maxHeartRate: result.stats.maxHeartRate
+            maxHeartRate: result.stats.maxHeartRate,
+            paceMph: paceMph
         )
         runs.append(run)
         nextTest += 1

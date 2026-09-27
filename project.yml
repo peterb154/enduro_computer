@@ -24,7 +24,8 @@ targets:
         UILaunchScreen: {}
         UIUserInterfaceStyle: Dark
         NSBluetoothAlwaysUsageDescription: Connects to your heart rate strap or watch.
-        UIBackgroundModes: [bluetooth-central]
+        NSLocationWhenInUseUsageDescription: Records your ride track, distance, and speed.
+        UIBackgroundModes: [bluetooth-central, location]
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft

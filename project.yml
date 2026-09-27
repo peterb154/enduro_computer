@@ -9,7 +9,7 @@ settings:
     SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
     SWIFT_APPROACHABLE_CONCURRENCY: YES
     CODE_SIGN_STYLE: Automatic
-    # DEVELOPMENT_TEAM: set once Xcode is signed in (free personal team)
+    DEVELOPMENT_TEAM: DG7BS9366P # free personal team
 targets:
   TrailDash:
     type: application

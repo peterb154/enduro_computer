@@ -57,15 +57,27 @@ struct ContentView: View {
 
     private var summary: some View {
         let stats = ride.stats
-        return Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 8) {
+        return VStack(spacing: 16) {
+            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 8) {
             GridRow { Text("Distance"); Text("\(Format.miles(stats.distance)) mi") }
             GridRow { Text("Moving"); Text(Format.duration(stats.movingTime)) }
             GridRow { Text("Total"); Text(Format.duration(ride.elapsed(at: .now))) }
             GridRow { Text("Avg / Max HR"); Text("\(stats.averageHeartRate.map(String.init) ?? "--") / \(stats.maxHeartRate.map(String.init) ?? "--")") }
+            }
+            .font(.system(size: 24, weight: .semibold))
+            .monospacedDigit()
+            .foregroundStyle(.white)
+
+            if let log = ride.log {
+                ShareLink(items: [log.gpxURL, log.logURL]) {
+                    Label("Share GPX + log", systemImage: "square.and.arrow.up")
+                        .font(.system(size: 24, weight: .bold))
+                        .frame(maxWidth: .infinity, minHeight: 60)
+                        .background(.blue, in: RoundedRectangle(cornerRadius: 16))
+                        .foregroundStyle(.white)
+                }
+            }
         }
-        .font(.system(size: 24, weight: .semibold))
-        .monospacedDigit()
-        .foregroundStyle(.white)
     }
 
     private func bigStat(_ value: String, label: String) -> some View {

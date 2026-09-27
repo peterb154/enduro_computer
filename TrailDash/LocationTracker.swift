@@ -33,7 +33,9 @@ extension LocationTracker: CLLocationManagerDelegate {
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude,
                 horizontalAccuracy: location.horizontalAccuracy,
-                speed: location.speed
+                speed: location.speed,
+                course: location.course,
+                altitude: location.altitude
             )
             lastFix = fix
             onFix?(fix)

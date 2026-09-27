@@ -7,6 +7,8 @@ nonisolated struct Fix {
     var longitude: Double
     var horizontalAccuracy: Double // meters; negative means invalid
     var speed: Double // m/s; negative means invalid
+    var course: Double = -1 // degrees true north; negative means invalid
+    var altitude: Double = 0 // meters
 }
 
 /// Great-circle distance in meters.

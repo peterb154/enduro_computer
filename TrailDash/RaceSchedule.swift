@@ -27,6 +27,39 @@ nonisolated struct ChartTest: Codable, Equatable, Identifiable {
     }
 }
 
+/// A roll chart reset line: "At 8.5 Reset To 15.9". The chart skips from `atMile`
+/// to `toMile` without riding it (time jumps with it).
+nonisolated struct ChartReset: Codable, Equatable, Identifiable {
+    /// Stable identity for list editing; not saved.
+    var id = UUID()
+    var atMile: Double?
+    var toMile: Double?
+
+    private enum CodingKeys: String, CodingKey {
+        case atMile, toMile
+    }
+
+    static func == (a: ChartReset, b: ChartReset) -> Bool {
+        a.atMile == b.atMile && a.toMile == b.toMile
+    }
+}
+
+/// Miles actually ridden between two chart mileages: the chart distance minus
+/// every reset skipped in between. Bartlett: 8.5 -> 19.0 with 8.5->15.9 is 3.1.
+nonisolated func riddenMiles(from start: Double, to end: Double, resets: [ChartReset]) -> Double {
+    let skipped = resets.reduce(0.0) { total, reset in
+        guard let at = reset.atMile, let to = reset.toMile, to > at, at >= start, to <= end else { return total }
+        return total + (to - at)
+    }
+    return max(0, end - start - skipped)
+}
+
+/// Speed needed to cover `miles` in `secondsLeft`, or nil when already out of time.
+nonisolated func requiredMph(miles: Double, secondsLeft: TimeInterval) -> Double? {
+    guard secondsLeft > 0 else { return nil }
+    return miles / (secondsLeft / 3600)
+}
+
 /// One saved race: key time and roll chart. The rider's due times are the
 /// chart times shifted by their key time offset (key time - race start).
 nonisolated struct RaceSchedule: Codable, Equatable, Identifiable {
@@ -38,15 +71,19 @@ nonisolated struct RaceSchedule: Codable, Equatable, Identifiable {
     var chartSpeedMph: Double?
     /// Index 0 is Test 1.
     var tests: [ChartTest] = []
+    /// Reset lines from the chart, for transfer distances.
+    var resets: [ChartReset] = []
 
     init(id: UUID = UUID(), name: String = "New race", raceStartMinutes: Int = 10 * 60,
-         keyTimeMinutes: Int = 10 * 60, chartSpeedMph: Double? = nil, tests: [ChartTest] = []) {
+         keyTimeMinutes: Int = 10 * 60, chartSpeedMph: Double? = nil, tests: [ChartTest] = [],
+         resets: [ChartReset] = []) {
         self.id = id
         self.name = name
         self.raceStartMinutes = raceStartMinutes
         self.keyTimeMinutes = keyTimeMinutes
         self.chartSpeedMph = chartSpeedMph
         self.tests = tests
+        self.resets = resets
     }
 
     /// Tolerates saves from before races had ids, names, or a chart speed.
@@ -58,6 +95,7 @@ nonisolated struct RaceSchedule: Codable, Equatable, Identifiable {
         keyTimeMinutes = try c.decodeIfPresent(Int.self, forKey: .keyTimeMinutes) ?? 10 * 60
         chartSpeedMph = try c.decodeIfPresent(Double.self, forKey: .chartSpeedMph)
         tests = try c.decodeIfPresent([ChartTest].self, forKey: .tests) ?? []
+        resets = try c.decodeIfPresent([ChartReset].self, forKey: .resets) ?? []
     }
 
     var keyOffsetSeconds: Int { (keyTimeMinutes - raceStartMinutes) * 60 }
@@ -92,6 +130,13 @@ nonisolated struct RaceSchedule: Codable, Equatable, Identifiable {
     func paceMph(for number: Int) -> Double? {
         guard let miles = test(number)?.lengthMiles, let ideal = idealTime(for: number), ideal > 0 else { return nil }
         return miles / (ideal / 3600)
+    }
+
+    /// Miles ridden from the end of one test to the start of another, or nil if
+    /// the chart miles aren't entered.
+    func transferMiles(afterTest finished: Int, to next: Int) -> Double? {
+        guard let from = test(finished)?.endMile, let to = test(next)?.startMile, to >= from else { return nil }
+        return riddenMiles(from: from, to: to, resets: resets)
     }
 
     /// This rider's due time at the test start, in seconds since midnight.

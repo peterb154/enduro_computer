@@ -44,6 +44,9 @@ struct SprintView: View {
             .foregroundStyle(.white)
             if let due = sprint.nextTestDue() {
                 DueCountdown(test: sprint.nextTest, due: due)
+                if let miles = sprint.transferMilesToGo {
+                    TransferPanel(miles: miles, due: due)
+                }
             }
             HStack(spacing: 12) {
                 stepButton("minus") { sprint.changeNextTest(by: -1) }
@@ -233,5 +236,23 @@ struct RunList: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxHeight: 200)
+    }
+}
+
+/// Between tests: miles to the next start and the speed needed to make it on time.
+/// Low number: ease off and let HR come down. High: haul.
+struct TransferPanel: View {
+    let miles: Double
+    let due: Date
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let needed = requiredMph(miles: miles, secondsLeft: due.timeIntervalSince(context.date))
+            HStack {
+                BigStat(value: String(format: "%.1f", miles), label: "MI TO START")
+                BigStat(value: needed.map { String(format: "%.0f", $0) } ?? "LATE",
+                        label: "NEED MPH", color: needed == nil ? .red : .white)
+            }
+        }
     }
 }

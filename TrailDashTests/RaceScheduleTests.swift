@@ -121,4 +121,29 @@ struct RaceScheduleTests {
         #expect(abs(milesToGo(lengthMiles: 7.0, distanceMeters: 1609.344 * 2.5) - 4.5) < 1e-9)
         #expect(milesToGo(lengthMiles: 7.0, distanceMeters: 1609.344 * 7.3) == 0)
     }
+
+    /// 2026 Bartlett resets (Test 5-7 "At" values as corrected by the rider).
+    let bartlettResets = [(0.7, 1.5), (8.5, 15.9), (26.2, 33.7), (44.5, 53.1), (65, 91.3),
+                          (99, 106.4), (116.7, 124.2), (134.9, 143.6)]
+        .map { ChartReset(atMile: $0.0, toMile: $0.1) }
+
+    @Test func riddenMilesSkipResets() {
+        #expect(abs(riddenMiles(from: 8.5, to: 19.0, resets: bartlettResets) - 3.1) < 1e-9) // T1 -> T2
+        #expect(abs(riddenMiles(from: 65, to: 92.0, resets: bartlettResets) - 0.7) < 1e-9)   // T4 -> T5
+        #expect(abs(riddenMiles(from: 0, to: 1.5, resets: bartlettResets) - 0.7) < 1e-9)     // start -> T1
+        #expect(abs(riddenMiles(from: 34.0, to: 44.5, resets: bartlettResets) - 10.5) < 1e-9) // no reset inside
+    }
+
+    @Test func transferMilesBetweenTests() {
+        let race = RaceSchedule(chartSpeedMph: 30,
+                                tests: [ChartTest(startMile: 1.5, endMile: 8.5), ChartTest(startMile: 19.0, endMile: 26.2)],
+                                resets: bartlettResets)
+        #expect(abs((race.transferMiles(afterTest: 1, to: 2) ?? 0) - 3.1) < 1e-9)
+        #expect(race.transferMiles(afterTest: 2, to: 3) == nil)
+    }
+
+    @Test func requiredSpeedForTransfer() {
+        #expect(abs((requiredMph(miles: 3.1, secondsLeft: 12 * 60) ?? 0) - 15.5) < 1e-9)
+        #expect(requiredMph(miles: 3.1, secondsLeft: 0) == nil)
+    }
 }

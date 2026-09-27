@@ -121,6 +121,23 @@ struct RaceEditor: View {
             }
 
             Section {
+                ForEach($race.resets) { $reset in
+                    HStack {
+                        NumberField(label: "At", value: $reset.atMile, placeholder: "mile")
+                        NumberField(label: "Reset to", value: $reset.toMile, placeholder: "mile")
+                    }
+                }
+                Button("Add reset") { race.resets.append(ChartReset()) }
+                if !race.resets.isEmpty {
+                    Button("Remove last reset", role: .destructive) { race.resets.removeLast() }
+                }
+            } header: {
+                Text("Resets")
+            } footer: {
+                Text("Every \"At X Reset To Y\" line, in order. Used to work out real miles on transfers between tests.")
+            }
+
+            Section {
                 Button("Add test") { race.addTest() }
                 if !race.tests.isEmpty {
                     Button("Remove last test", role: .destructive) { race.tests.removeLast() }

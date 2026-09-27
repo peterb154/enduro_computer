@@ -36,6 +36,8 @@ final class SprintSession {
         if !hasSelectedRace { selectedRaceID = nil }
     }
     private(set) var timer = SprintTimer()
+    /// Distance ridden since the last test ended (the out-check), for the transfer.
+    private(set) var transferStats = TripStats()
     private(set) var runs: [SprintRun] = []
     private(set) var log: RideLog?
     /// The last closed session's log, for sharing.
@@ -50,6 +52,12 @@ final class SprintSession {
 
     /// Chart pace for the next test, if its times and miles are entered.
     var chartPaceMph: Double? { race.paceMph(for: nextTest) }
+
+    /// Miles left to the next test's start, counted from the last test's end mile.
+    var transferMilesToGo: Double? {
+        guard let last = runs.last, let total = race.transferMiles(afterTest: last.test, to: nextTest) else { return nil }
+        return max(0, total - transferStats.distance / 1609.344)
+    }
 
     /// Chart length of the next (or running) test, if its miles are entered.
     var chartLengthMiles: Double? { race.test(nextTest)?.lengthMiles }
@@ -105,6 +113,7 @@ final class SprintSession {
         )
         runs.append(run)
         nextTest += 1
+        transferStats = TripStats() // at the out-check: odometer = this test's end mile
         log?.append(.mark("stop \(run.label)", at: run.end))
     }
 
@@ -125,11 +134,13 @@ final class SprintSession {
         if isSessionOpen { endSession() }
         runs = []
         nextTest = 1
+        transferStats = TripStats()
     }
 
     func add(_ fix: Fix) {
         guard isSessionOpen else { return }
         log?.append(.fix(fix))
+        if !timer.isRunning { transferStats.add(fix) }
         let wasRunning = timer.isRunning
         timer.add(fix)
         if !wasRunning, case .running(let rolling) = timer.state {

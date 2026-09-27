@@ -15,13 +15,16 @@ targets:
     type: application
     platform: iOS
     sources: [TrailDash]
-    scheme: {}
+    scheme:
+      testTargets: [TrailDashTests]
     info:
       path: TrailDash/Info.plist
       properties:
         CFBundleDisplayName: TrailDash
         UILaunchScreen: {}
         UIUserInterfaceStyle: Dark
+        NSBluetoothAlwaysUsageDescription: Connects to your heart rate strap or watch.
+        UIBackgroundModes: [bluetooth-central]
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
@@ -30,3 +33,12 @@ targets:
       base:
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: NO
+  TrailDashTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [TrailDashTests]
+    dependencies:
+      - target: TrailDash
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES

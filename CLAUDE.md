@@ -11,6 +11,7 @@ Early prototype, Phase 1. Commit and push straight to `main` (no branches/PRs) u
 - Open: `open TrailDash.xcodeproj`
 - Build for the phone: `xcodebuild -scheme TrailDash -destination 'id=<UDID>' -derivedDataPath build -allowProvisioningUpdates -allowProvisioningDeviceRegistration build`
 - Install + launch: `xcrun devicectl device install app --device <UDID> build/Build/Products/Debug-iphoneos/TrailDash.app && xcrun devicectl device process launch --device <UDID> com.peterb154.TrailDash`
+- Unit tests (Swift Testing), run on the phone: `xcodebuild test -scheme TrailDash -destination 'id=<UDID>' -derivedDataPath build -allowProvisioningUpdates`; add `-only-testing:TrailDashTests/<Suite>/<test>()` for one test. Simulator also works with `-destination 'platform=iOS Simulator,name=iPhone 18 Pro'` once its runtime mounts.
 - Find the UDID: `xcrun devicectl list devices` (target phone is an iPhone 13: no Dynamic Island, so Live Activities show on the lock screen only)
 - BLE and real GPS only work on the physical iPhone, not the simulator.
 - Signing: free Apple ID (personal team). Installs expire after 7 days; reinstall from Xcode. No TestFlight until a paid account exists.

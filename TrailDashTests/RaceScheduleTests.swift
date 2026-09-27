@@ -108,4 +108,12 @@ struct RaceScheduleTests {
         #expect(schedule.tests[0].startMile == 0)
         #expect(schedule.tests[1].startMile == nil)
     }
+
+    @Test func parsesDecimalPadInput() {
+        #expect(parseDecimal("44.5") == 44.5)
+        #expect(parseDecimal("44,5") == 44.5)
+        #expect(parseDecimal("65") == 65)
+        #expect(parseDecimal("") == nil)
+        #expect(parseDecimal("4.4.5") == nil)
+    }
 }

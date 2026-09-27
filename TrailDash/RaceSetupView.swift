@@ -164,18 +164,27 @@ private struct ChartTimeField: View {
     }
 }
 
+/// Decimal entry that saves on every keystroke. A formatted TextField only saves
+/// on Return or focus loss, and the decimal pad has no Return key, so edits were lost.
 private struct NumberField: View {
     let label: String
     @Binding var value: Double?
     let placeholder: String
+    @State private var text = ""
 
     var body: some View {
         HStack {
             Text(label)
-            TextField(placeholder, value: $value, format: .number.precision(.fractionLength(0...2)))
+            TextField(placeholder, text: $text)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()
+        }
+        .onAppear {
+            text = value.map { $0.formatted(.number.precision(.fractionLength(0...2)).grouping(.never)) } ?? ""
+        }
+        .onChange(of: text) { _, newText in
+            value = parseDecimal(newText)
         }
     }
 }

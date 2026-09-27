@@ -124,6 +124,12 @@ nonisolated func parseChartTime(_ text: String, raceStartMinutes: Int) -> Int? {
     return seconds
 }
 
+/// Parses a decimal typed on the decimal pad, accepting "." or "," as the separator.
+/// Blank means no value.
+nonisolated func parseDecimal(_ text: String) -> Double? {
+    Double(text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))
+}
+
 nonisolated enum CountdownPhase: Equatable {
     case waiting, oneMinute, tenSeconds, late
 }

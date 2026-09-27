@@ -43,10 +43,11 @@ struct RaceSetupView: View {
 
     private func testSection(number: Int, test: Binding<ChartTest>) -> some View {
         Section {
-            ChartTimeField(label: "Start time", seconds: test.startTime, raceStartMinutes: sprint.race.raceStartMinutes)
+            // Same order as a chart line: mile, then time.
             MileField(label: "Start mile", miles: test.startMile)
-            ChartTimeField(label: "End time", seconds: test.endTime, raceStartMinutes: sprint.race.raceStartMinutes)
+            ChartTimeField(label: "Start time", seconds: test.startTime, raceStartMinutes: sprint.race.raceStartMinutes)
             MileField(label: "End mile", miles: test.endMile)
+            ChartTimeField(label: "End time", seconds: test.endTime, raceStartMinutes: sprint.race.raceStartMinutes)
         } header: {
             Text("Test \(number)")
         } footer: {

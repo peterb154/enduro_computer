@@ -25,14 +25,20 @@ struct SprintView: View {
     // MARK: Idle: next test, results so far, arm
 
     private var idle: some View {
-        VStack(spacing: 16) {
-            HStack {
-                BigStat(value: heartRate.bpm.map(String.init) ?? "--", label: "HR")
+        VStack(spacing: 10) {
+            // One compact line: labels sit beside the numbers instead of under them.
+            HStack(alignment: .firstTextBaseline) {
+                Text(heartRate.bpm.map(String.init) ?? "--")
+                    .font(.system(size: 40, weight: .heavy, design: .rounded))
+                Text("HR").font(.system(size: 16, weight: .bold)).foregroundStyle(.gray)
+                Spacer()
                 TimelineView(.periodic(from: .now, by: 1)) { context in
-                    BigStat(value: context.date.formatted(.dateTime.hour(.defaultDigits(amPM: .omitted)).minute().second()),
-                            label: "TIME")
+                    Text(context.date.formatted(.dateTime.hour(.defaultDigits(amPM: .omitted)).minute().second()))
+                        .font(.system(size: 40, weight: .heavy, design: .rounded))
                 }
             }
+            .monospacedDigit()
+            .foregroundStyle(.white)
             HStack(spacing: 12) {
                 stepButton("minus") { sprint.changeNextTest(by: -1) }
                 Text("NEXT: TEST \(sprint.nextTest)")

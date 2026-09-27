@@ -38,6 +38,11 @@ nonisolated struct RaceSchedule: Codable, Equatable {
 
     var keyOffsetSeconds: Int { (keyTimeMinutes - raceStartMinutes) * 60 }
 
+    /// The chart always starts at mile 0.00, so Test 1 starts there.
+    mutating func addTest() {
+        tests.append(tests.isEmpty ? ChartTest(startMile: 0) : ChartTest())
+    }
+
     func test(_ number: Int) -> ChartTest? {
         tests.indices.contains(number - 1) ? tests[number - 1] : nil
     }

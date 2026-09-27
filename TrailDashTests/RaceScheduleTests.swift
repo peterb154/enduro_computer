@@ -77,4 +77,12 @@ struct RaceScheduleTests {
         #expect(countdownPhase(remaining: 0) == .late)
         #expect(countdownPhase(remaining: -30) == .late)
     }
+
+    @Test func firstTestStartsAtMileZero() {
+        var schedule = RaceSchedule()
+        schedule.addTest()
+        schedule.addTest()
+        #expect(schedule.tests[0].startMile == 0)
+        #expect(schedule.tests[1].startMile == nil)
+    }
 }

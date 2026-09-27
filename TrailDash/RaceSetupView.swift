@@ -25,7 +25,7 @@ struct RaceSetupView: View {
                 }
 
                 Section {
-                    Button("Add test") { sprint.race.tests.append(ChartTest()) }
+                    Button("Add test") { sprint.race.addTest() }
                     if !sprint.race.tests.isEmpty {
                         Button("Remove last test", role: .destructive) { sprint.race.tests.removeLast() }
                     }
@@ -112,7 +112,7 @@ private struct MileField: View {
     var body: some View {
         HStack {
             Text(label)
-            TextField("0.00", value: $miles, format: .number.precision(.fractionLength(0...2)))
+            TextField("mile", value: $miles, format: .number.precision(.fractionLength(0...2)))
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()

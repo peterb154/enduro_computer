@@ -49,10 +49,22 @@ struct SprintView: View {
                     .frame(maxWidth: .infinity)
                 stepButton("plus") { sprint.changePace(by: 1) }
             }
-            Text(sprint.paces.summary)
-                .font(.system(size: 16, weight: .semibold))
-                .monospacedDigit()
-                .foregroundStyle(.gray)
+            HStack {
+                Text(sprint.paces.summary)
+                    .font(.system(size: 16, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(.gray)
+                if sprint.paces.varies {
+                    Spacer()
+                    Text("Hold to reset paces")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 40)
+                        .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 10))
+                        .onLongPressGesture(minimumDuration: 1) { sprint.resetPaces() }
+                }
+            }
             if !sprint.runs.isEmpty {
                 RunList(runs: sprint.runs, total: sprint.totalTime, totalDropped: sprint.totalDropped)
             }

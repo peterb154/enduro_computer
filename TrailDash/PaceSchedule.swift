@@ -26,6 +26,14 @@ nonisolated struct PaceSchedule: Equatable {
         }
     }
 
+    /// True when some test's pace differs from Test 1's.
+    var varies: Bool { changes.keys.contains { $0 > 1 } }
+
+    /// Every test gets Test 1's pace.
+    mutating func resetToFirstTestPace() {
+        changes = changes.filter { $0.key == 1 }
+    }
+
     /// e.g. "T1–4 24 · T5 22 · T6+ 24"
     var summary: String {
         let starts = [1] + changes.keys.filter { $0 > 1 }.sorted()

@@ -34,6 +34,10 @@ final class SprintSession {
         nextTest = max(1, nextTest + delta)
     }
 
+    func resetPaces() {
+        paces.resetToFirstTestPace()
+    }
+
     /// Changes the pace from the next test onward.
     func changePace(by delta: Int) {
         paces.setPace(max(1, paceMph + delta), from: nextTest)

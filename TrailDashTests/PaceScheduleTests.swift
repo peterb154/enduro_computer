@@ -54,4 +54,15 @@ struct PaceScheduleTests {
         #expect(paces.changes == [3: 22])
         #expect(paces.summary == "T1–2 24 · T3+ 22")
     }
+
+    @Test func resetAppliesFirstTestPaceEverywhere() {
+        var paces = PaceSchedule(defaultMph: 24)
+        paces.setPace(26, from: 1)
+        paces.setPace(22, from: 5)
+        #expect(paces.varies)
+        paces.resetToFirstTestPace()
+        #expect(!paces.varies)
+        #expect(paces.pace(for: 9) == 26)
+        #expect(paces.summary == "T1+ 26")
+    }
 }

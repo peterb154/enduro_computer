@@ -13,17 +13,38 @@ struct RaceScheduleTests {
                      tests: [ChartTest(startTime: 36000), test2])
     }
 
-    @Test func chartTestDerivedValues() {
-        #expect(test2.idealTime == TimeInterval(28 * 60 + 30))
+    @Test func idealFromPrintedEndTime() {
+        #expect(race.idealTime(for: 2) == TimeInterval(28 * 60 + 30))
         #expect(abs((test2.lengthMiles ?? 0) - 9.5) < 1e-9)
-        #expect(abs((test2.paceMph ?? 0) - 20.0) < 1e-9)
+        #expect(abs((race.paceMph(for: 2) ?? 0) - 20.0) < 1e-9)
     }
 
     @Test func incompleteTestHasNoDerivedValues() {
-        let test = ChartTest(startTime: 36000)
-        #expect(test.idealTime == nil)
-        #expect(test.lengthMiles == nil)
-        #expect(test.paceMph == nil)
+        #expect(race.idealTime(for: 1) == nil)
+        #expect(race.paceMph(for: 1) == nil)
+        #expect(race.endSeconds(for: 1) == nil)
+    }
+
+    /// 2026 Bartlett, Test 3: starts 34.0 at 11:08:00, reset at 44.5, 30 mph chart; end time not printed.
+    @Test func idealFromChartSpeedWhenEndTimeMissing() {
+        let bartlett = RaceSchedule(raceStartMinutes: 600, keyTimeMinutes: 600, chartSpeedMph: 30,
+                                    tests: [ChartTest(startTime: 11 * 3600 + 8 * 60, startMile: 34.0, endMile: 44.5)])
+        #expect(bartlett.idealTime(for: 1) == TimeInterval(21 * 60))
+        #expect(bartlett.endSeconds(for: 1) == 11 * 3600 + 29 * 60)
+        #expect(abs((bartlett.paceMph(for: 1) ?? 0) - 30) < 1e-9)
+    }
+
+    @Test func printedEndTimeWinsOverChartSpeed() {
+        var withSpeed = race
+        withSpeed.chartSpeedMph = 30
+        #expect(withSpeed.idealTime(for: 2) == TimeInterval(28 * 60 + 30))
+    }
+
+    @Test func decodesSetupSavedBeforeChartSpeedExisted() throws {
+        let old = #"{"raceStartMinutes":540,"keyTimeMinutes":560,"tests":[{"startMile":0,"startTime":32400,"endMile":8.8,"endTime":34220}]}"#
+        let decoded = try JSONDecoder().decode(RaceSchedule.self, from: Data(old.utf8))
+        #expect(decoded.chartSpeedMph == nil)
+        #expect(decoded.idealTime(for: 1) == TimeInterval(30 * 60 + 20))
     }
 
     @Test func dueTimesShiftByKeyOffset() {

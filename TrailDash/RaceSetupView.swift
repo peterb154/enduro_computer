@@ -14,14 +14,16 @@ struct RaceSetupView: View {
                     DatePicker("My key time", selection: timeBinding($sprint.race.keyTimeMinutes),
                                displayedComponents: .hourAndMinute)
                     LabeledContent("Offset", value: "\(sprint.race.keyOffsetSeconds / 60) min")
+                    NumberField(label: "Chart speed (mph)", value: $sprint.race.chartSpeedMph, placeholder: "mph")
                 } header: {
-                    Text("Key time")
+                    Text("Roll chart")
                 } footer: {
-                    Text("Race start is the time the roll chart is based on. Your due times are the chart times plus your offset.")
+                    Text("Race start is the time the roll chart is based on; your due times are the chart times plus your offset. Chart speed (\"Start Speed\") works out test end times the chart doesn't print.")
                 }
 
-                ForEach(sprint.race.tests.indices, id: \.self) { index in
-                    testSection(number: index + 1, test: $sprint.race.tests[index])
+                // Identified by id, not index, so removing a test can't leave a field bound past the end.
+                ForEach($sprint.race.tests) { $test in
+                    testSection(number: (sprint.race.tests.firstIndex { $0.id == test.id } ?? 0) + 1, test: $test)
                 }
 
                 Section {
@@ -30,7 +32,7 @@ struct RaceSetupView: View {
                         Button("Remove last test", role: .destructive) { sprint.race.tests.removeLast() }
                     }
                 } footer: {
-                    Text("Each test runs from a \"Reset to\" line to the \"At\" line before the next reset. Type times as digits: 94600 is 9:46:00.")
+                    Text("Start: the whole-minute line where the test starts. End mile: the \"At\" mileage of the next reset. End time only if the chart prints it. Type times as digits: 94600 is 9:46:00.")
                 }
             }
             .scrollDismissesKeyboard(.immediately)
@@ -44,10 +46,11 @@ struct RaceSetupView: View {
     private func testSection(number: Int, test: Binding<ChartTest>) -> some View {
         Section {
             // Same order as a chart line: mile, then time.
-            MileField(label: "Start mile", miles: test.startMile)
+            NumberField(label: "Start mile", value: test.startMile, placeholder: "mile")
             ChartTimeField(label: "Start time", seconds: test.startTime, raceStartMinutes: sprint.race.raceStartMinutes)
-            MileField(label: "End mile", miles: test.endMile)
-            ChartTimeField(label: "End time", seconds: test.endTime, raceStartMinutes: sprint.race.raceStartMinutes)
+            NumberField(label: "End mile", value: test.endMile, placeholder: "mile")
+            ChartTimeField(label: "End time", seconds: test.endTime, raceStartMinutes: sprint.race.raceStartMinutes,
+                           placeholder: "optional")
         } header: {
             Text("Test \(number)")
         } footer: {
@@ -56,13 +59,15 @@ struct RaceSetupView: View {
         }
     }
 
-    /// e.g. "Your start 10:06:00 · 9.50 mi · ideal 28:30 · 20.0 mph"
+    /// e.g. "Your start 10:06:00 · 9.50 mi · ideal 28:30 · ends 10:14:30 · 20.0 mph"
     private func summary(number: Int, test: ChartTest) -> String {
+        let race = sprint.race
         var parts: [String] = []
-        if let due = sprint.race.dueSeconds(for: number) { parts.append("Your start \(Format.clock(seconds: due))") }
+        if let due = race.dueSeconds(for: number) { parts.append("Your start \(Format.clock(seconds: due))") }
         if let miles = test.lengthMiles { parts.append(String(format: "%.2f mi", miles)) }
-        if let ideal = test.idealTime { parts.append("ideal \(Format.duration(ideal))") }
-        if let pace = test.paceMph { parts.append(String(format: "%.1f mph", pace)) }
+        if let ideal = race.idealTime(for: number) { parts.append("ideal \(Format.duration(ideal))") }
+        if test.endTime == nil, let end = race.endSeconds(for: number) { parts.append("ends \(Format.clock(seconds: end))") }
+        if let pace = race.paceMph(for: number) { parts.append(String(format: "%.1f mph", pace)) }
         return parts.joined(separator: " · ")
     }
 
@@ -82,12 +87,13 @@ private struct ChartTimeField: View {
     let label: String
     @Binding var seconds: Int?
     let raceStartMinutes: Int
+    var placeholder = "94600"
     @State private var text = ""
 
     var body: some View {
         HStack {
             Text(label)
-            TextField("94600", text: $text)
+            TextField(placeholder, text: $text)
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()
@@ -105,14 +111,15 @@ private struct ChartTimeField: View {
     }
 }
 
-private struct MileField: View {
+private struct NumberField: View {
     let label: String
-    @Binding var miles: Double?
+    @Binding var value: Double?
+    let placeholder: String
 
     var body: some View {
         HStack {
             Text(label)
-            TextField("mile", value: $miles, format: .number.precision(.fractionLength(0...2)))
+            TextField(placeholder, value: $value, format: .number.precision(.fractionLength(0...2)))
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()

@@ -25,7 +25,7 @@ final class SprintSession {
     var isSessionOpen: Bool { log != nil }
 
     /// Chart pace for the next test, if its times and miles are entered.
-    var chartPaceMph: Double? { race.test(nextTest)?.paceMph }
+    var chartPaceMph: Double? { race.paceMph(for: nextTest) }
 
     /// Pace for live time-dropped while running: the chart's, else the fallback.
     var livePaceMph: Double { chartPaceMph ?? RideSettings.standard.sprintFallbackPaceMph }
@@ -71,7 +71,7 @@ final class SprintSession {
             distance: result.stats.distance,
             averageHeartRate: result.stats.averageHeartRate,
             maxHeartRate: result.stats.maxHeartRate,
-            idealTime: race.test(nextTest)?.idealTime
+            idealTime: race.idealTime(for: nextTest)
         )
         runs.append(run)
         nextTest += 1

@@ -1,30 +1,29 @@
 import Foundation
 
-/// One timed test as printed on the roll chart. In restart enduros each test
-/// is the stretch between resets: it starts at a "Reset to" line and ends at
-/// the "At" line before the next reset (or the chart's last line).
-/// Times are seconds since midnight, as printed (i.e. for the race start, row 0).
-nonisolated struct ChartTest: Codable, Equatable {
+/// One timed test from the roll chart. A test starts at the start check (the
+/// whole-minute line after "Start Test N", or after a reset) and ends where the
+/// next reset happens (or the chart's last line). Times are seconds since
+/// midnight, as printed (i.e. for the race start, row 0). End time is optional:
+/// many charts don't print the time at the reset mileage.
+nonisolated struct ChartTest: Codable, Equatable, Identifiable {
+    /// Stable identity for list editing; not saved.
+    var id = UUID()
     var startTime: Int?
     var endTime: Int?
     var startMile: Double?
     var endMile: Double?
 
-    /// Chart time for the test; time dropped is measured against this.
-    var idealTime: TimeInterval? {
-        guard let startTime, let endTime, endTime > startTime else { return nil }
-        return TimeInterval(endTime - startTime)
+    private enum CodingKeys: String, CodingKey {
+        case startTime, endTime, startMile, endMile
+    }
+
+    static func == (a: ChartTest, b: ChartTest) -> Bool {
+        a.startTime == b.startTime && a.endTime == b.endTime && a.startMile == b.startMile && a.endMile == b.endMile
     }
 
     var lengthMiles: Double? {
         guard let startMile, let endMile, endMile > startMile else { return nil }
         return endMile - startMile
-    }
-
-    /// Average speed the chart expects over the test.
-    var paceMph: Double? {
-        guard let lengthMiles, let idealTime else { return nil }
-        return lengthMiles / (idealTime / 3600)
     }
 }
 
@@ -33,6 +32,8 @@ nonisolated struct ChartTest: Codable, Equatable {
 nonisolated struct RaceSchedule: Codable, Equatable {
     var raceStartMinutes = 10 * 60
     var keyTimeMinutes = 10 * 60
+    /// The chart's speed average ("Start Speed"). Used when a test's end time isn't printed.
+    var chartSpeedMph: Double?
     /// Index 0 is Test 1.
     var tests: [ChartTest] = []
 
@@ -45,6 +46,29 @@ nonisolated struct RaceSchedule: Codable, Equatable {
 
     func test(_ number: Int) -> ChartTest? {
         tests.indices.contains(number - 1) ? tests[number - 1] : nil
+    }
+
+    /// Chart time for the test; time dropped is measured against this. Uses the
+    /// printed end time if entered, else the test length at the chart speed.
+    func idealTime(for number: Int) -> TimeInterval? {
+        guard let test = test(number) else { return nil }
+        if let start = test.startTime, let end = test.endTime, end > start {
+            return TimeInterval(end - start)
+        }
+        guard let miles = test.lengthMiles, let speed = chartSpeedMph, speed > 0 else { return nil }
+        return (miles / speed * 3600).rounded()
+    }
+
+    /// Chart end time: printed, or derived from the ideal time.
+    func endSeconds(for number: Int) -> Int? {
+        guard let start = test(number)?.startTime, let ideal = idealTime(for: number) else { return nil }
+        return start + Int(ideal)
+    }
+
+    /// Average speed the chart expects over the test.
+    func paceMph(for number: Int) -> Double? {
+        guard let miles = test(number)?.lengthMiles, let ideal = idealTime(for: number), ideal > 0 else { return nil }
+        return miles / (ideal / 3600)
     }
 
     /// This rider's due time at the test start, in seconds since midnight.

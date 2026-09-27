@@ -116,4 +116,9 @@ struct RaceScheduleTests {
         #expect(parseDecimal("") == nil)
         #expect(parseDecimal("4.4.5") == nil)
     }
+
+    @Test func milesToGoCountsDownAndStopsAtZero() {
+        #expect(abs(milesToGo(lengthMiles: 7.0, distanceMeters: 1609.344 * 2.5) - 4.5) < 1e-9)
+        #expect(milesToGo(lengthMiles: 7.0, distanceMeters: 1609.344 * 7.3) == 0)
+    }
 }

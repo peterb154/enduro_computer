@@ -51,6 +51,9 @@ final class SprintSession {
     /// Chart pace for the next test, if its times and miles are entered.
     var chartPaceMph: Double? { race.paceMph(for: nextTest) }
 
+    /// Chart length of the next (or running) test, if its miles are entered.
+    var chartLengthMiles: Double? { race.test(nextTest)?.lengthMiles }
+
     /// Pace for live time-dropped while running: the chart's, else the fallback.
     var livePaceMph: Double { chartPaceMph ?? RideSettings.standard.sprintFallbackPaceMph }
 

@@ -124,6 +124,12 @@ nonisolated func parseChartTime(_ text: String, raceStartMinutes: Int) -> Int? {
     return seconds
 }
 
+/// Miles left in a test: chart length minus GPS distance so far, never below zero.
+/// GPS reads a little short in the woods, so this may not quite reach zero at the finish.
+nonisolated func milesToGo(lengthMiles: Double, distanceMeters: Double) -> Double {
+    max(0, lengthMiles - distanceMeters / 1609.344)
+}
+
 /// Parses a decimal typed on the decimal pad, accepting "." or "," as the separator.
 /// Blank means no value.
 nonisolated func parseDecimal(_ text: String) -> Double? {

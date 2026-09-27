@@ -140,7 +140,12 @@ struct SprintView: View {
                     }
                     HStack {
                         BigStat(value: Format.mph(elapsed > 0 ? distance / elapsed : 0), label: "AVG MPH")
-                        BigStat(value: Format.miles(distance), label: "MI")
+                        if let length = sprint.chartLengthMiles {
+                            BigStat(value: String(format: "%.1f", milesToGo(lengthMiles: length, distanceMeters: distance)),
+                                    label: "TO GO")
+                        } else {
+                            BigStat(value: Format.miles(distance), label: "MI")
+                        }
                     }
                 }
             }

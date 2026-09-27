@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import TrailDash
 
@@ -27,10 +28,17 @@ struct FormatTests {
         #expect(Format.signedMinutes(0) == "+0:00")
     }
 
-    @Test func clockFromSeconds() {
+    @Test func clockIs24Hour() {
         #expect(Format.clock(seconds: 10 * 3600 + 54 * 60) == "10:54:00")
-        #expect(Format.clock(seconds: 13 * 3600 + 7 * 60 + 15) == "1:07:15")
-        #expect(Format.clock(seconds: 12 * 3600) == "12:00:00")
-        #expect(Format.clock(seconds: 0) == "12:00:00")
+        #expect(Format.clock(seconds: 13 * 3600 + 4 * 60) == "13:04:00")
+        #expect(Format.clock(seconds: 9 * 3600) == "9:00:00")
+        #expect(Format.clock(seconds: 0) == "0:00:00")
+    }
+
+    @Test func clockFromDate() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/Chicago")!
+        let date = calendar.date(from: DateComponents(year: 2026, month: 10, day: 4, hour: 14, minute: 51, second: 7))!
+        #expect(Format.clock(date, calendar: calendar) == "14:51:07")
     }
 }

@@ -63,10 +63,13 @@ struct RaceEditor: View {
             }
 
             Section {
+                // en_GB locale forces 24-hour pickers, like the chart.
                 DatePicker("Race start", selection: timeBinding($race.raceStartMinutes),
                            displayedComponents: .hourAndMinute)
+                    .environment(\.locale, Locale(identifier: "en_GB"))
                 DatePicker("My key time", selection: timeBinding($race.keyTimeMinutes),
                            displayedComponents: .hourAndMinute)
+                    .environment(\.locale, Locale(identifier: "en_GB"))
                 LabeledContent("Offset", value: "\(race.keyOffsetSeconds / 60) min")
                 NumberField(label: "Chart speed (mph)", value: $race.chartSpeedMph, placeholder: "mph")
             } header: {
@@ -188,7 +191,7 @@ struct DueCountdown: View {
             let remaining = due.timeIntervalSince(context.date)
             let phase = countdownPhase(remaining: remaining)
             HStack(alignment: .firstTextBaseline) {
-                Text("T\(test) DUE \(due.formatted(.dateTime.hour(.defaultDigits(amPM: .omitted)).minute().second()))")
+                Text("T\(test) DUE \(Format.clock(due))")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(.gray)
                 Spacer()

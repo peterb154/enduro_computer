@@ -21,12 +21,16 @@ nonisolated enum Format {
         return String(format: "%@%d:%02d", seconds < 0 ? "-" : "+", total / 60, total % 60)
     }
 
-    /// Seconds since midnight as a 12-hour clock without AM/PM, like a roll chart:
-    /// 39240 -> "10:54:00".
+    /// Seconds since midnight as a 24-hour clock, like the roll chart: 47040 -> "13:04:00".
     static func clock(seconds: Int) -> String {
         let wrapped = ((seconds % 86400) + 86400) % 86400
-        let hour = wrapped / 3600 % 12
-        return String(format: "%d:%02d:%02d", hour == 0 ? 12 : hour, wrapped / 60 % 60, wrapped % 60)
+        return String(format: "%d:%02d:%02d", wrapped / 3600, wrapped / 60 % 60, wrapped % 60)
+    }
+
+    /// Time of day as a 24-hour clock, regardless of the phone's 12/24-hour setting.
+    static func clock(_ date: Date, calendar: Calendar = .current) -> String {
+        let parts = calendar.dateComponents([.hour, .minute, .second], from: date)
+        return clock(seconds: (parts.hour ?? 0) * 3600 + (parts.minute ?? 0) * 60 + (parts.second ?? 0))
     }
 
     /// h:mm:ss, or m:ss under an hour.

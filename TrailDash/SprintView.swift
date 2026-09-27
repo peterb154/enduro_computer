@@ -35,7 +35,7 @@ struct SprintView: View {
                 Text("HR").font(.system(size: 16, weight: .bold)).foregroundStyle(.gray)
                 Spacer()
                 TimelineView(.periodic(from: .now, by: 1)) { context in
-                    Text(context.date.formatted(.dateTime.hour(.defaultDigits(amPM: .omitted)).minute().second()))
+                    Text(Format.clock(context.date))
                         .font(.system(size: 40, weight: .heavy, design: .rounded))
                 }
             }

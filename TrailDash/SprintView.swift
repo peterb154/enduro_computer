@@ -43,6 +43,10 @@ struct SprintView: View {
                     .frame(maxWidth: .infinity)
                 stepButton("plus") { sprint.changePace(by: 1) }
             }
+            Text(sprint.paces.summary)
+                .font(.system(size: 16, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(.gray)
             if !sprint.runs.isEmpty {
                 RunList(runs: sprint.runs, total: sprint.totalTime, totalDropped: sprint.totalDropped)
             }

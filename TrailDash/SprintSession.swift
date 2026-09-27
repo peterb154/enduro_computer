@@ -7,8 +7,8 @@ import Foundation
 final class SprintSession {
     /// The test that the next arm will time. Advances after each run.
     private(set) var nextTest = 1
-    /// Pace for the next test. Sticky: carries forward until changed.
-    private(set) var paceMph = RideSettings.standard.sprintPaceMph
+    /// Pace per test, set up front or as the event goes.
+    private(set) var paces = PaceSchedule()
     private(set) var timer = SprintTimer()
     private(set) var runs: [SprintRun] = []
     private(set) var log: RideLog?
@@ -22,6 +22,9 @@ final class SprintSession {
 
     var isSessionOpen: Bool { log != nil }
 
+    /// Pace for the next test.
+    var paceMph: Int { paces.pace(for: nextTest) }
+
     /// Sum of all test times: what the event is scored on.
     var totalTime: TimeInterval { runs.map(\.duration).reduce(0, +) }
     var totalDropped: TimeInterval { runs.map(\.timeDropped).reduce(0, +) }
@@ -31,14 +34,15 @@ final class SprintSession {
         nextTest = max(1, nextTest + delta)
     }
 
+    /// Changes the pace from the next test onward.
     func changePace(by delta: Int) {
-        paceMph = max(1, paceMph + delta)
+        paces.setPace(max(1, paceMph + delta), from: nextTest)
     }
 
     func arm() {
         if log == nil {
+            // Test number and paces are the rider's pre-race setup; keep them.
             runs = []
-            nextTest = 1
             finishedLog = nil
             log = RideLog(startedAt: .now)
             location.setBackgroundUpdates(true)
@@ -75,6 +79,9 @@ final class SprintSession {
         finishedLog = log
         log = nil
         location.setBackgroundUpdates(false)
+        // Ready for the next event's setup. Results stay on screen until the next arm.
+        nextTest = 1
+        paces = PaceSchedule()
     }
 
     func add(_ fix: Fix) {

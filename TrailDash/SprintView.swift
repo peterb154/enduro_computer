@@ -10,7 +10,6 @@ struct SprintView: View {
     var body: some View {
         VStack(spacing: 16) {
             StatusLine(heartRate: heartRate, location: location)
-            HeartRateNumber(bpm: heartRate.bpm)
             switch sprint.timer.state {
             case .idle:
                 idle
@@ -27,11 +26,12 @@ struct SprintView: View {
 
     private var idle: some View {
         VStack(spacing: 16) {
-            TimelineView(.periodic(from: .now, by: 1)) { context in
-                Text(context.date.formatted(date: .omitted, time: .standard))
-                    .font(.system(size: 44, weight: .heavy, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(.white)
+            HStack {
+                BigStat(value: heartRate.bpm.map(String.init) ?? "--", label: "HR")
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    BigStat(value: context.date.formatted(.dateTime.hour(.defaultDigits(amPM: .omitted)).minute().second()),
+                            label: "TIME")
+                }
             }
             HStack(spacing: 12) {
                 stepButton("minus") { sprint.changeNextTest(by: -1) }
@@ -101,6 +101,7 @@ struct SprintView: View {
 
     private var armed: some View {
         VStack(spacing: 16) {
+            HeartRateNumber(bpm: heartRate.bpm)
             Text("ARMED")
                 .font(.system(size: 72, weight: .heavy))
                 .foregroundStyle(.yellow)
@@ -116,6 +117,7 @@ struct SprintView: View {
 
     private func running(since start: Date) -> some View {
         VStack(spacing: 16) {
+            HeartRateNumber(bpm: heartRate.bpm)
             TimelineView(.periodic(from: .now, by: 0.1)) { context in
                 let elapsed = context.date.timeIntervalSince(start)
                 let distance = sprint.timer.stats.distance

@@ -29,7 +29,7 @@ The owner directs the work and reviews code but does not hand-write Swift. Expla
 
 - iPhone in a TPU bar pad with an inductive charger. The phone is always charging while riding, so battery life is not a constraint and GPS runs at best accuracy.
 - Chest-strap HR monitor (e.g., Polar H10) over BLE. Standard service `0x180D`, measurement characteristic `0x2A37`. Parse the flags byte correctly: 8- vs 16-bit HR value, and ignore RR intervals for now. Auto-reconnect on drop.
-- Bar-mounted Bluetooth button (cheap BLE remote presenting as an HID keyboard or consumer-control device). Gloves, mud, and water mean **the touchscreen is unreliable while riding**. Every in-ride action must be triggerable by the bar button. Capture key presses in the foreground via `pressesBegan`. Investigate what the specific remote sends before building the mapping, and make the mapping configurable.
+- In-ride input: **on-screen buttons first.** Gloves, mud, and water make the touchscreen unreliable, so buttons must be huge, few, and placed at the screen edges, and every press gets a haptic/audio confirmation. If this proves unusable on the bike, fall back to a bar-mounted BLE button (cheap remote presenting as an HID keyboard or consumer-control device, captured in the foreground via `pressesBegan`, with a configurable mapping). Route in-ride actions (drop lap point, manual lap, arm, stop) through one set of named actions so a BLE button can be added later without touching mode logic. "Bar button" below means whichever input is in use.
 - Severe vibration (2-stroke). Nothing to do in code, but don't design features that depend on fine touch input or reading small text.
 
 ## Modes
@@ -89,7 +89,7 @@ Multiple timed runs on a couple of different special tests, with pit time betwee
 ## Build phases
 
 1. **Phase 1 — Trail MVP (priority; needed within a few weeks for an Idaho singletrack trip):** HR strap connection, background GPS logging, Live Activity with HR, session start/stop, raw logging + GPX export.
-2. **Phase 2 — Race infrastructure:** bar button input + mapping, big-number race display, replay test harness.
+2. **Phase 2 — Race infrastructure:** big on-screen action buttons (BLE bar button only if those fail on the bike), big-number race display, replay test harness.
 3. **Phase 3 — Hare scramble mode.**
 4. **Phase 4 — Sprint enduro mode.**
 5. Later / maybe: session history & comparison views, external high-rate GPS receiver support.

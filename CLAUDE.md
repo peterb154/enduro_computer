@@ -2,15 +2,22 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Current state
+## Current state & commands
 
-Greenfield: no Xcode project or source exists yet. The spec below is the source of truth. When the Xcode project is created, add build/test commands here (e.g. `xcodebuild test -scheme <Scheme> -destination 'platform=iOS Simulator,name=<device>'` and the `-only-testing:` form for a single test).
+Early prototype, Phase 1. Commit and push straight to `main` (no branches/PRs) until the app works on the bike.
+
+- `project.yml` is the source of truth for the Xcode project (XcodeGen). `TrailDash.xcodeproj` and `Info.plist` are generated and gitignored; never edit them by hand.
+- Regenerate after adding/removing files or changing `project.yml`: `xcodegen generate`
+- Open: `open TrailDash.xcodeproj`
+- Build: `xcodebuild -scheme TrailDash -destination 'generic/platform=iOS' build`
+- BLE and real GPS only work on the physical iPhone, not the simulator.
+- Signing: free Apple ID (personal team). Installs expire after 7 days; reinstall from Xcode. No TestFlight until a paid account exists.
 
 # TrailDash (working name)
 
 ## What this is
 
-A personal iOS app for a handlebar-mounted iPhone on a 2024 KTM 300 XC. It shows heart rate and race-specific timing data at a glance while riding off-road. It will never ship to the App Store. It is distributed to one device via Xcode / TestFlight.
+A personal iOS app for a handlebar-mounted iPhone on a 2024 KTM 300 XC. It shows heart rate and race-specific timing data at a glance while riding off-road. It will never ship to the App Store. It is installed on one device from Xcode.
 
 The owner directs the work and reviews code but does not hand-write Swift. Explain non-obvious decisions briefly in commit messages and PR-style summaries, not in long code comments.
 

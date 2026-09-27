@@ -23,6 +23,7 @@ struct StatusLine: View {
     }
 
     private var gpsStatus: String {
+        if let speed = location.simulatedSpeedMph { return "SIM \(Int(speed)) mph" }
         guard let fix = location.lastFix, fix.horizontalAccuracy >= 0 else { return "GPS: no fix" }
         return "GPS ±\(Int(fix.horizontalAccuracy)) m"
     }

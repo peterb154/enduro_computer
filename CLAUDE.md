@@ -15,7 +15,7 @@ Commit and push straight to `main` (no branches/PRs) until the app works on the 
 - Install + launch: `xcrun devicectl device install app --device <UDID> build/Build/Products/Debug-iphoneos/TrailDash.app && xcrun devicectl device process launch --device <UDID> com.peterb154.TrailDash`
 - Unit tests (Swift Testing), run on the phone: `xcodebuild test -scheme TrailDash -destination 'id=<UDID>' -derivedDataPath build -allowProvisioningUpdates`; add `-only-testing:TrailDashTests/<Suite>/<test>()` for one test. Simulator also works with `-destination 'platform=iOS Simulator,name=iPhone 18 Pro'` once its runtime mounts.
 - Find the UDID: `xcrun devicectl list devices` (target phone is an iPhone 13: no Dynamic Island, so Live Activities show on the lock screen only)
-- BLE and real GPS only work on the physical iPhone, not the simulator.
+- BLE and real GPS only work on the physical iPhone, not the simulator. For desk testing, Races sheet → Desk practice → Simulate riding feeds fake fixes at a chosen speed through the normal `LocationTracker.onFix` path (status line shows SIM).
 - Signing: free Apple ID (personal team). Installs expire after 7 days; reinstall from Xcode. No TestFlight until a paid account exists.
 
 # TrailDash (working name)
@@ -108,7 +108,7 @@ Several timed tests (8+ is common), ridden once each **in order**, separated by 
 2. **Phase 2 — Race infrastructure:** big on-screen action buttons (BLE bar button only if those fail on the bike), big-number race display, replay test harness.
 3. **Phase 3 — Hare scramble mode.**
 4. **Phase 4 — Sprint enduro mode.**
-5. Later / maybe: session history & comparison views, external high-rate GPS receiver support.
+5. Later / maybe: session history & comparison views, external high-rate GPS receiver support, a companion web app (self-hosted on the owner's Proxmox server) for viewing ride logs.
 
 Don't start a later phase until the earlier one works on the bike.
 

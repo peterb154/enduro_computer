@@ -21,7 +21,7 @@ struct SprintView: View {
             }
         }
         .sensoryFeedback(.impact(weight: .heavy), trigger: sprint.timer.state)
-        .sheet(isPresented: $showingSetup) { RaceSetupView(sprint: sprint) }
+        .sheet(isPresented: $showingSetup) { RaceSetupView(sprint: sprint, location: location) }
     }
 
     // MARK: Idle: next test, results so far, arm

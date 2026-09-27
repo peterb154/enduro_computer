@@ -3,6 +3,7 @@ import SwiftUI
 /// Saved races: pick the one to use, or open one to edit its roll chart.
 struct RaceSetupView: View {
     @Bindable var sprint: SprintSession
+    let location: LocationTracker
     @Environment(\.dismiss) private var dismiss
     @State private var path: [UUID] = []
 
@@ -25,6 +26,7 @@ struct RaceSetupView: View {
                 Section {
                     Button("New race") { path.append(sprint.newRace()) }
                 }
+                practiceSection
             }
             .navigationTitle("Races")
             .navigationDestination(for: UUID.self) { id in
@@ -35,6 +37,25 @@ struct RaceSetupView: View {
             .toolbar {
                 Button("Done") { dismiss() }
             }
+        }
+    }
+
+    /// Fake GPS so the armed/running screens can be tried at a desk.
+    private var practiceSection: some View {
+        Section {
+            Toggle("Simulate riding", isOn: Binding(
+                get: { location.simulatedSpeedMph != nil },
+                set: { location.simulate(speedMph: $0 ? 0 : nil) }))
+            if let speed = location.simulatedSpeedMph {
+                Stepper(value: Binding(get: { speed }, set: { location.simulate(speedMph: $0) }),
+                        in: 0...60, step: 5) {
+                    Text("Speed: \(Int(speed)) mph").monospacedDigit()
+                }
+            }
+        } header: {
+            Text("Desk practice")
+        } footer: {
+            Text("Ignores real GPS. Starts at 0 mph: arm a test, then raise the speed to watch it auto-start. The status line shows SIM while on. Turns off when the app restarts.")
         }
     }
 

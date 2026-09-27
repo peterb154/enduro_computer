@@ -26,4 +26,11 @@ struct FormatTests {
         #expect(Format.signedMinutes(-12.4) == "-0:12")
         #expect(Format.signedMinutes(0) == "+0:00")
     }
+
+    @Test func clockFromMinutes() {
+        #expect(Format.clock(minutes: 654) == "10:54")
+        #expect(Format.clock(minutes: 13 * 60 + 5) == "1:05")
+        #expect(Format.clock(minutes: 12 * 60) == "12:00")
+        #expect(Format.clock(minutes: 0) == "12:00")
+    }
 }

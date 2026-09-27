@@ -21,6 +21,13 @@ nonisolated enum Format {
         return String(format: "%@%d:%02d", seconds < 0 ? "-" : "+", total / 60, total % 60)
     }
 
+    /// Minutes since midnight as a 12-hour clock without AM/PM, e.g. 654 -> "10:54".
+    static func clock(minutes: Int) -> String {
+        let wrapped = ((minutes % 1440) + 1440) % 1440
+        let hour = wrapped / 60 % 12
+        return String(format: "%d:%02d", hour == 0 ? 12 : hour, wrapped % 60)
+    }
+
     /// h:mm:ss, or m:ss under an hour.
     static func duration(_ seconds: TimeInterval) -> String {
         let total = Int(seconds)

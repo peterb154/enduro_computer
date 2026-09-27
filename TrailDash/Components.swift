@@ -60,6 +60,7 @@ struct BigStat: View {
 struct BigButtonLabel: View {
     let title: String
     let color: Color
+    var height: CGFloat = 100
 
     var body: some View {
         Text(title)
@@ -67,7 +68,7 @@ struct BigButtonLabel: View {
             .minimumScaleFactor(0.5)
             .lineLimit(1)
             .foregroundStyle(.black)
-            .frame(maxWidth: .infinity, minHeight: 100)
+            .frame(maxWidth: .infinity, minHeight: height)
             .background(color, in: RoundedRectangle(cornerRadius: 20))
             .contentShape(Rectangle())
     }

@@ -6,6 +6,7 @@ struct SprintView: View {
     let location: LocationTracker
     /// When the rider's thumb first hit STOP; the run ends here, not when the hold completes.
     @State private var stopPressedAt: Date?
+    @State private var showingSetup = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -20,6 +21,7 @@ struct SprintView: View {
             }
         }
         .sensoryFeedback(.impact(weight: .heavy), trigger: sprint.timer.state)
+        .sheet(isPresented: $showingSetup) { RaceSetupView(sprint: sprint) }
     }
 
     // MARK: Idle: next test, results so far, arm
@@ -39,6 +41,9 @@ struct SprintView: View {
             }
             .monospacedDigit()
             .foregroundStyle(.white)
+            if let due = sprint.nextTestDue() {
+                DueCountdown(test: sprint.nextTest, due: due)
+            }
             HStack(spacing: 12) {
                 stepButton("minus") { sprint.changeNextTest(by: -1) }
                 Text("NEXT: TEST \(sprint.nextTest)")
@@ -75,18 +80,30 @@ struct SprintView: View {
                 RunList(runs: sprint.runs, total: sprint.totalTime, totalDropped: sprint.totalDropped)
             }
             Button { sprint.arm() } label: {
-                BigButtonLabel(title: "ARM TEST \(sprint.nextTest)", color: .yellow)
+                // Pressed at the start line, not mid-ride, so it can be shorter than STOP.
+                BigButtonLabel(title: "ARM TEST \(sprint.nextTest)", color: .yellow, height: 80)
             }
             .buttonStyle(.plain)
 
-            if sprint.isSessionOpen {
-                Text("Hold to end session")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
-                    .onLongPressGesture(minimumDuration: 1) { sprint.endSession() }
-            } else if let log = sprint.finishedLog {
+            HStack(spacing: 12) {
+                Button { showingSetup = true } label: {
+                    Label("Race setup", systemImage: "clock")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                if sprint.isSessionOpen {
+                    Text("Hold to end session")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
+                        .onLongPressGesture(minimumDuration: 1) { sprint.endSession() }
+                }
+            }
+            if !sprint.isSessionOpen, let log = sprint.finishedLog {
                 ShareButton(log: log)
             }
         }
@@ -111,6 +128,9 @@ struct SprintView: View {
             Text("ARMED")
                 .font(.system(size: 72, weight: .heavy))
                 .foregroundStyle(.yellow)
+            if let due = sprint.nextTestDue() {
+                DueCountdown(test: sprint.nextTest, due: due)
+            }
             Text("Test \(sprint.nextTest) · \(sprint.paceMph) mph pace · starts when you go")
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.gray)

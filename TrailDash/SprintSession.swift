@@ -7,8 +7,14 @@ import Foundation
 final class SprintSession {
     /// The test that the next arm will time. Advances after each run.
     private(set) var nextTest = 1
-    /// Pace per test, set up front or as the event goes.
-    private(set) var paces = PaceSchedule()
+    /// Pace per test, set up front or as the event goes. Saved across app restarts.
+    private(set) var paces = SprintSession.load(PaceSchedule.self, key: "paces") ?? PaceSchedule() {
+        didSet { Self.save(paces, key: "paces") }
+    }
+    /// Key time and roll chart. Saved across app restarts.
+    var race = SprintSession.load(RaceSchedule.self, key: "race") ?? RaceSchedule() {
+        didSet { Self.save(race, key: "race") }
+    }
     private(set) var timer = SprintTimer()
     private(set) var runs: [SprintRun] = []
     private(set) var log: RideLog?
@@ -24,6 +30,11 @@ final class SprintSession {
 
     /// Pace for the next test.
     var paceMph: Int { paces.pace(for: nextTest) }
+
+    /// When this rider is due at the next test's start, if it's on the roll chart.
+    func nextTestDue(today: Date = .now) -> Date? {
+        race.dueDate(for: nextTest, on: today)
+    }
 
     /// Sum of all test times: what the event is scored on.
     var totalTime: TimeInterval { runs.map(\.duration).reduce(0, +) }
@@ -86,6 +97,7 @@ final class SprintSession {
         // Ready for the next event's setup. Results stay on screen until the next arm.
         nextTest = 1
         paces = PaceSchedule()
+        race = RaceSchedule()
     }
 
     func add(_ fix: Fix) {
@@ -103,5 +115,13 @@ final class SprintSession {
         guard isSessionOpen else { return }
         log?.append(.heartRate(heartRate, at: .now))
         timer.add(heartRate: heartRate)
+    }
+
+    private static func load<T: Decodable>(_ type: T.Type, key: String) -> T? {
+        UserDefaults.standard.data(forKey: key).flatMap { try? JSONDecoder().decode(T.self, from: $0) }
+    }
+
+    private static func save<T: Encodable>(_ value: T, key: String) {
+        UserDefaults.standard.set(try? JSONEncoder().encode(value), forKey: key)
     }
 }

@@ -3,7 +3,7 @@ import Foundation
 /// Pace (whole mph) per test. A pace set at a test applies to it and every
 /// later test until the next change, so the rider can set the whole event's
 /// paces up front by rolling forward through the tests.
-nonisolated struct PaceSchedule: Equatable {
+nonisolated struct PaceSchedule: Codable, Equatable {
     let defaultMph: Int
     /// Test number -> pace from that test on.
     private(set) var changes: [Int: Int] = [:]

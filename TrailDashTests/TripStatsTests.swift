@@ -60,4 +60,18 @@ struct TripStatsTests {
         #expect(stats.averageHeartRate == 150)
         #expect(stats.maxHeartRate == 180)
     }
+
+    @Test func movingAverageSpeedIgnoresStops() {
+        var stats = TripStats()
+        stats.add(fix(meters: 0, seconds: 0))
+        stats.add(fix(meters: 10, seconds: 2)) // 5 m/s
+        stats.add(fix(meters: 10, seconds: 60, speed: 0)) // stopped almost a minute
+        stats.add(fix(meters: 20, seconds: 62)) // moving again
+        #expect(stats.movingTime == 4)
+        #expect(abs(stats.movingAverageSpeed - 5) < 0.01)
+    }
+
+    @Test func movingAverageSpeedIsZeroBeforeMoving() {
+        #expect(TripStats().movingAverageSpeed == 0)
+    }
 }

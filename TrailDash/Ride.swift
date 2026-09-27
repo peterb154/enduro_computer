@@ -52,6 +52,12 @@ final class Ride {
         liveActivity.update(bpm: heartRate, distance: stats.distance)
     }
 
+    /// Distance over total elapsed time, stops included (m/s).
+    func averageSpeed(at now: Date) -> Double {
+        let elapsed = elapsed(at: now)
+        return elapsed > 0 ? stats.distance / elapsed : 0
+    }
+
     func elapsed(at now: Date) -> TimeInterval {
         guard let startedAt else { return 0 }
         return (endedAt ?? now).timeIntervalSince(startedAt)

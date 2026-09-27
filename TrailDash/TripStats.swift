@@ -36,6 +36,11 @@ nonisolated struct TripStats {
         self.settings = settings
     }
 
+    /// Distance over time spent moving (m/s).
+    var movingAverageSpeed: Double {
+        movingTime > 0 ? distance / movingTime : 0
+    }
+
     var averageHeartRate: Int? {
         heartRateCount == 0 ? nil : heartRateSum / heartRateCount
     }

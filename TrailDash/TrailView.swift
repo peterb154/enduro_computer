@@ -21,9 +21,15 @@ struct TrailView: View {
 
     private var liveStats: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            HStack {
-                BigStat(value: Format.duration(ride.elapsed(at: context.date)), label: "TIME")
-                BigStat(value: Format.miles(ride.stats.distance), label: "MI")
+            VStack(spacing: 8) {
+                HStack {
+                    BigStat(value: Format.duration(ride.elapsed(at: context.date)), label: "TIME")
+                    BigStat(value: Format.miles(ride.stats.distance), label: "MI")
+                }
+                HStack {
+                    BigStat(value: Format.mph(ride.averageSpeed(at: context.date)), label: "AVG MPH")
+                    BigStat(value: Format.mph(ride.stats.movingAverageSpeed), label: "MOVING MPH")
+                }
             }
         }
     }
@@ -35,6 +41,8 @@ struct TrailView: View {
                 GridRow { Text("Distance"); Text("\(Format.miles(stats.distance)) mi") }
                 GridRow { Text("Moving"); Text(Format.duration(stats.movingTime)) }
                 GridRow { Text("Total"); Text(Format.duration(ride.elapsed(at: .now))) }
+                GridRow { Text("Avg speed"); Text("\(Format.mph(ride.averageSpeed(at: .now))) mph") }
+                GridRow { Text("Moving avg"); Text("\(Format.mph(stats.movingAverageSpeed)) mph") }
                 GridRow { Text("Avg / Max HR"); Text("\(stats.averageHeartRate.map(String.init) ?? "--") / \(stats.maxHeartRate.map(String.init) ?? "--")") }
             }
             .font(.system(size: 24, weight: .semibold))

@@ -1,18 +1,25 @@
 import SwiftUI
 
-/// Small gray line: HR connection on the left, GPS accuracy on the right.
+/// Small gray line: HR connection on the left (tap to pick a device), GPS accuracy on the right.
 struct StatusLine: View {
     let heartRate: HeartRateMonitor
     let location: LocationTracker
+    @State private var showingDevices = false
 
     var body: some View {
         HStack {
-            Text(heartRate.status)
+            Button { showingDevices = true } label: {
+                Label(heartRate.status, systemImage: "heart")
+                    .lineLimit(1)
+                    .frame(minHeight: 32)
+            }
+            .buttonStyle(.plain)
             Spacer()
             Text(gpsStatus)
         }
         .font(.system(size: 16))
         .foregroundStyle(.gray)
+        .sheet(isPresented: $showingDevices) { HeartRateDevicesView(heartRate: heartRate) }
     }
 
     private var gpsStatus: String {

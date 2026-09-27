@@ -53,7 +53,8 @@ One app, three modes. Shared plumbing: location stream, HR stream, raw logger, d
 - Navigation happens in onX Offroad, which is in the foreground. This app runs in the background.
 - Start/stop a session. Log GPS track and HR continuously.
 - **Live Activity** showing current HR (compact Dynamic Island + lock screen), plus elapsed time and distance in the expanded view.
-- Stats at end: distance, moving time, total time, avg/max HR.
+- Live and end-of-ride stats: distance, total and moving time, avg speed (stops included) and moving avg speed, avg/max HR.
+- HR device: the chosen device is remembered and preferred on launch; tap the HR status line to pick another when several are on.
 
 ### 2. Hare scramble
 

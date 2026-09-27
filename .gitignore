@@ -4,5 +4,6 @@ TrailDash/Info.plist
 
 xcuserdata/
 DerivedData/
+build/
 .build/
 .DS_Store

@@ -9,7 +9,9 @@ Early prototype, Phase 1. Commit and push straight to `main` (no branches/PRs) u
 - `project.yml` is the source of truth for the Xcode project (XcodeGen). `TrailDash.xcodeproj` and `Info.plist` are generated and gitignored; never edit them by hand.
 - Regenerate after adding/removing files or changing `project.yml`: `xcodegen generate`
 - Open: `open TrailDash.xcodeproj`
-- Build: `xcodebuild -scheme TrailDash -destination 'generic/platform=iOS' build`
+- Build for the phone: `xcodebuild -scheme TrailDash -destination 'id=<UDID>' -derivedDataPath build -allowProvisioningUpdates -allowProvisioningDeviceRegistration build`
+- Install + launch: `xcrun devicectl device install app --device <UDID> build/Build/Products/Debug-iphoneos/TrailDash.app && xcrun devicectl device process launch --device <UDID> com.peterb154.TrailDash`
+- Find the UDID: `xcrun devicectl list devices` (target phone is an iPhone 13: no Dynamic Island, so Live Activities show on the lock screen only)
 - BLE and real GPS only work on the physical iPhone, not the simulator.
 - Signing: free Apple ID (personal team). Installs expire after 7 days; reinstall from Xcode. No TestFlight until a paid account exists.
 

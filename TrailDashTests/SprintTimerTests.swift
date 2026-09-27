@@ -105,7 +105,7 @@ struct SprintTimerTests {
 
     @Test func runAverageSpeedIncludesStops() {
         let run = SprintRun(test: 2, start: t0, end: t0.addingTimeInterval(100),
-                            distance: 1000, averageHeartRate: nil, maxHeartRate: nil, paceMph: 24)
+                            distance: 1000, averageHeartRate: nil, maxHeartRate: nil, idealTime: nil)
         #expect(run.averageSpeed == 10)
         #expect(run.label == "Test 2")
     }
@@ -115,5 +115,18 @@ struct SprintTimerTests {
         #expect(abs(timeDropped(elapsed: 190, distance: 1609.344, paceMph: 24) - 40) < 0.01)
         #expect(abs(timeDropped(elapsed: 140, distance: 1609.344, paceMph: 24) + 10) < 0.01)
         #expect(timeDropped(elapsed: 100, distance: 1000, paceMph: 0) == 0)
+    }
+
+    @Test func runDroppedUsesChartIdealTimeWhenKnown() {
+        let run = SprintRun(test: 2, start: t0, end: t0.addingTimeInterval(1750),
+                            distance: 15_000, averageHeartRate: nil, maxHeartRate: nil, idealTime: 1710)
+        #expect(run.timeDropped == 40)
+    }
+
+    @Test func runDroppedFallsBackToGPSDistanceAtDefaultPace() {
+        // One mile at the 24 mph fallback takes 150 s.
+        let run = SprintRun(test: 2, start: t0, end: t0.addingTimeInterval(190),
+                            distance: 1609.344, averageHeartRate: nil, maxHeartRate: nil, idealTime: nil)
+        #expect(abs(run.timeDropped - 40) < 0.01)
     }
 }

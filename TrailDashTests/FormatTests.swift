@@ -27,10 +27,10 @@ struct FormatTests {
         #expect(Format.signedMinutes(0) == "+0:00")
     }
 
-    @Test func clockFromMinutes() {
-        #expect(Format.clock(minutes: 654) == "10:54")
-        #expect(Format.clock(minutes: 13 * 60 + 5) == "1:05")
-        #expect(Format.clock(minutes: 12 * 60) == "12:00")
-        #expect(Format.clock(minutes: 0) == "12:00")
+    @Test func clockFromSeconds() {
+        #expect(Format.clock(seconds: 10 * 3600 + 54 * 60) == "10:54:00")
+        #expect(Format.clock(seconds: 13 * 3600 + 7 * 60 + 15) == "1:07:15")
+        #expect(Format.clock(seconds: 12 * 3600) == "12:00:00")
+        #expect(Format.clock(seconds: 0) == "12:00:00")
     }
 }

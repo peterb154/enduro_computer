@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Pre-race form: key time and roll chart test start times.
+/// Race morning setup: key time and each test's roll chart numbers.
 struct RaceSetupView: View {
     @Bindable var sprint: SprintSession
     @Environment(\.dismiss) private var dismiss
@@ -13,48 +13,27 @@ struct RaceSetupView: View {
                                displayedComponents: .hourAndMinute)
                     DatePicker("My key time", selection: timeBinding($sprint.race.keyTimeMinutes),
                                displayedComponents: .hourAndMinute)
-                    LabeledContent("Offset", value: "\(sprint.race.keyOffsetMinutes) min")
+                    LabeledContent("Offset", value: "\(sprint.race.keyOffsetSeconds / 60) min")
                 } header: {
                     Text("Key time")
                 } footer: {
-                    Text("Race start is the time the roll chart is based on. Your due times are the roll chart times plus your offset.")
+                    Text("Race start is the time the roll chart is based on. Your due times are the chart times plus your offset.")
+                }
+
+                ForEach(sprint.race.tests.indices, id: \.self) { index in
+                    testSection(number: index + 1, test: $sprint.race.tests[index])
                 }
 
                 Section {
-                    if sprint.race.rollChart.isEmpty {
-                        paceStepper(label: "All tests", test: 1)
+                    Button("Add test") { sprint.race.tests.append(ChartTest()) }
+                    if !sprint.race.tests.isEmpty {
+                        Button("Remove last test", role: .destructive) { sprint.race.tests.removeLast() }
                     }
-                    ForEach(sprint.race.rollChart.indices, id: \.self) { index in
-                        let test = index + 1
-                        VStack(alignment: .leading) {
-                            HStack {
-                                DatePicker("Test \(test)", selection: timeBinding($sprint.race.rollChart[index]),
-                                           displayedComponents: .hourAndMinute)
-                                Text("→ \(Format.clock(minutes: sprint.race.dueMinutes(for: test) ?? 0))")
-                                    .monospacedDigit()
-                                    .foregroundStyle(.secondary)
-                            }
-                            paceStepper(label: "Pace", test: test)
-                        }
-                    }
-                    Button("Add test") { sprint.race.addTest() }
-                    if !sprint.race.rollChart.isEmpty {
-                        Button("Remove last test", role: .destructive) { sprint.race.rollChart.removeLast() }
-                    }
-                } header: {
-                    Text("Tests (from roll chart)")
                 } footer: {
-                    Text("A pace applies to that test and every later test until you change it. Tests past the last one listed keep the last pace.")
-                }
-
-                Section {
-                    LabeledContent("Paces", value: sprint.paces.summary)
-                        .monospacedDigit()
-                    if sprint.paces.varies {
-                        Button("Reset all paces to Test 1's", role: .destructive) { sprint.resetPaces() }
-                    }
+                    Text("Each test runs from a \"Reset to\" line to the \"At\" line before the next reset. Type times as digits: 94600 is 9:46:00.")
                 }
             }
+            .scrollDismissesKeyboard(.immediately)
             .navigationTitle("Race setup")
             .toolbar {
                 Button("Done") { dismiss() }
@@ -62,12 +41,28 @@ struct RaceSetupView: View {
         }
     }
 
-    private func paceStepper(label: String, test: Int) -> some View {
-        Stepper(value: Binding(get: { sprint.paces.pace(for: test) },
-                               set: { sprint.setPace($0, from: test) }),
-                in: 1...99) {
-            Text("\(label): \(sprint.paces.pace(for: test)) mph").monospacedDigit()
+    private func testSection(number: Int, test: Binding<ChartTest>) -> some View {
+        Section {
+            ChartTimeField(label: "Start time", seconds: test.startTime, raceStartMinutes: sprint.race.raceStartMinutes)
+            MileField(label: "Start mile", miles: test.startMile)
+            ChartTimeField(label: "End time", seconds: test.endTime, raceStartMinutes: sprint.race.raceStartMinutes)
+            MileField(label: "End mile", miles: test.endMile)
+        } header: {
+            Text("Test \(number)")
+        } footer: {
+            Text(summary(number: number, test: test.wrappedValue))
+                .monospacedDigit()
         }
+    }
+
+    /// e.g. "Your start 10:06:00 · 9.50 mi · ideal 28:30 · 20.0 mph"
+    private func summary(number: Int, test: ChartTest) -> String {
+        var parts: [String] = []
+        if let due = sprint.race.dueSeconds(for: number) { parts.append("Your start \(Format.clock(seconds: due))") }
+        if let miles = test.lengthMiles { parts.append(String(format: "%.2f mi", miles)) }
+        if let ideal = test.idealTime { parts.append("ideal \(Format.duration(ideal))") }
+        if let pace = test.paceMph { parts.append(String(format: "%.1f mph", pace)) }
+        return parts.joined(separator: " · ")
     }
 
     /// Edits minutes-since-midnight with a time-only picker.
@@ -81,7 +76,50 @@ struct RaceSetupView: View {
     }
 }
 
-/// "T2 DUE 10:54   -4:12": counts down to the rider's minute, then up in red.
+/// A roll chart time typed as digits on the number pad, with the parsed time shown beside it.
+private struct ChartTimeField: View {
+    let label: String
+    @Binding var seconds: Int?
+    let raceStartMinutes: Int
+    @State private var text = ""
+
+    var body: some View {
+        HStack {
+            Text(label)
+            TextField("94600", text: $text)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+            Text(seconds.map(Format.clock) ?? (text.isEmpty ? "" : "?"))
+                .monospacedDigit()
+                .foregroundStyle(seconds == nil ? .red : .secondary)
+                .frame(minWidth: 80, alignment: .trailing)
+        }
+        .onAppear {
+            text = seconds.map { Format.clock(seconds: $0).filter(\.isNumber) } ?? ""
+        }
+        .onChange(of: text) { _, newText in
+            seconds = parseChartTime(newText, raceStartMinutes: raceStartMinutes)
+        }
+    }
+}
+
+private struct MileField: View {
+    let label: String
+    @Binding var miles: Double?
+
+    var body: some View {
+        HStack {
+            Text(label)
+            TextField("0.00", value: $miles, format: .number.precision(.fractionLength(0...2)))
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+        }
+    }
+}
+
+/// "T2 DUE 10:06:00   -4:12": counts down to the rider's minute, then up in red.
 /// Buzzes on entering the last minute, the last 10 s, and going late.
 struct DueCountdown: View {
     let test: Int
@@ -92,7 +130,7 @@ struct DueCountdown: View {
             let remaining = due.timeIntervalSince(context.date)
             let phase = countdownPhase(remaining: remaining)
             HStack(alignment: .firstTextBaseline) {
-                Text("T\(test) DUE \(due.formatted(.dateTime.hour(.defaultDigits(amPM: .omitted)).minute()))")
+                Text("T\(test) DUE \(due.formatted(.dateTime.hour(.defaultDigits(amPM: .omitted)).minute().second()))")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(.gray)
                 Spacer()

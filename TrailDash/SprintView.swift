@@ -46,7 +46,7 @@ struct SprintView: View {
             }
             HStack(spacing: 12) {
                 stepButton("minus") { sprint.changeNextTest(by: -1) }
-                Text("TEST \(sprint.nextTest) · \(sprint.paceMph) MPH")
+                Text(nextTestTitle)
                     .font(.system(size: 28, weight: .heavy))
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
@@ -87,6 +87,11 @@ struct SprintView: View {
         }
     }
 
+    private var nextTestTitle: String {
+        guard let pace = sprint.chartPaceMph else { return "TEST \(sprint.nextTest)" }
+        return "TEST \(sprint.nextTest) · \(Format.mph(pace / 2.236936)) MPH"
+    }
+
     private func stepButton(_ systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
@@ -109,7 +114,7 @@ struct SprintView: View {
             if let due = sprint.nextTestDue() {
                 DueCountdown(test: sprint.nextTest, due: due)
             }
-            Text("Test \(sprint.nextTest) · \(sprint.paceMph) mph pace · starts when you go")
+            Text("Test \(sprint.nextTest) · starts when you go")
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.gray)
             BigButtonLabel(title: "HOLD TO DISARM", color: .gray)
@@ -125,7 +130,7 @@ struct SprintView: View {
             TimelineView(.periodic(from: .now, by: 0.1)) { context in
                 let elapsed = context.date.timeIntervalSince(start)
                 let distance = sprint.timer.stats.distance
-                let dropped = timeDropped(elapsed: elapsed, distance: distance, paceMph: sprint.paceMph)
+                let dropped = timeDropped(elapsed: elapsed, distance: distance, paceMph: sprint.livePaceMph)
                 VStack(spacing: 8) {
                     HStack {
                         BigStat(value: Format.runTime(elapsed), label: "TIME")
@@ -171,7 +176,7 @@ struct RunList: View {
                         Text(Format.runTime(run.duration))
                         Text(Format.signedMinutes(run.timeDropped))
                             .foregroundStyle(run.timeDropped > 0 ? .red : .green)
-                        Text("\(Format.mph(run.averageSpeed))/\(run.paceMph)")
+                        Text("\(Format.mph(run.averageSpeed)) mph")
                             .foregroundStyle(.gray)
                     }
                 }

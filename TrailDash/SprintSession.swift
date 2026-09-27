@@ -7,11 +7,7 @@ import Foundation
 final class SprintSession {
     /// The test that the next arm will time. Advances after each run.
     private(set) var nextTest = 1
-    /// Pace per test, set up front or as the event goes. Saved across app restarts.
-    private(set) var paces = SprintSession.load(PaceSchedule.self, key: "paces") ?? PaceSchedule() {
-        didSet { Self.save(paces, key: "paces") }
-    }
-    /// Key time and roll chart. Saved across app restarts.
+    /// Key time and roll chart, entered the morning of the race. Saved across app restarts.
     var race = SprintSession.load(RaceSchedule.self, key: "race") ?? RaceSchedule() {
         didSet { Self.save(race, key: "race") }
     }
@@ -28,8 +24,11 @@ final class SprintSession {
 
     var isSessionOpen: Bool { log != nil }
 
-    /// Pace for the next test.
-    var paceMph: Int { paces.pace(for: nextTest) }
+    /// Chart pace for the next test, if its times and miles are entered.
+    var chartPaceMph: Double? { race.test(nextTest)?.paceMph }
+
+    /// Pace for live time-dropped while running: the chart's, else the fallback.
+    var livePaceMph: Double { chartPaceMph ?? RideSettings.standard.sprintFallbackPaceMph }
 
     /// When this rider is due at the next test's start, if it's on the roll chart.
     func nextTestDue(today: Date = .now) -> Date? {
@@ -45,25 +44,16 @@ final class SprintSession {
         nextTest = max(1, nextTest + delta)
     }
 
-    func resetPaces() {
-        paces.resetToFirstTestPace()
-    }
-
-    /// Sets the pace for `test` and every later test until the next change.
-    func setPace(_ mph: Int, from test: Int) {
-        paces.setPace(max(1, mph), from: test)
-    }
-
     func arm() {
         if log == nil {
-            // Test number and paces are the rider's pre-race setup; keep them.
+            // Test number and race setup are the rider's pre-race setup; keep them.
             runs = []
             finishedLog = nil
             log = RideLog(startedAt: .now)
             location.setBackgroundUpdates(true)
         }
         timer.arm()
-        log?.append(.mark("arm Test \(nextTest) pace \(paceMph) mph", at: .now))
+        log?.append(.mark("arm Test \(nextTest)", at: .now))
     }
 
     func disarm() {
@@ -81,7 +71,7 @@ final class SprintSession {
             distance: result.stats.distance,
             averageHeartRate: result.stats.averageHeartRate,
             maxHeartRate: result.stats.maxHeartRate,
-            paceMph: paceMph
+            idealTime: race.test(nextTest)?.idealTime
         )
         runs.append(run)
         nextTest += 1
@@ -96,7 +86,6 @@ final class SprintSession {
         location.setBackgroundUpdates(false)
         // Ready for the next event's setup. Results stay on screen until the next arm.
         nextTest = 1
-        paces = PaceSchedule()
         race = RaceSchedule()
     }
 

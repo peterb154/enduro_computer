@@ -9,20 +9,27 @@ nonisolated struct SprintRun: Identifiable, Equatable {
     let distance: Double // meters
     let averageHeartRate: Int?
     let maxHeartRate: Int?
-    let paceMph: Int
+    /// Roll chart time for this test, if entered.
+    let idealTime: TimeInterval?
 
     var label: String { "Test \(test)" }
     var duration: TimeInterval { end.timeIntervalSince(start) }
     /// Includes any stops, which is what matters for racing.
     var averageSpeed: Double { duration > 0 ? distance / duration : 0 }
-    var timeDropped: TimeInterval { TrailDash.timeDropped(elapsed: duration, distance: distance, paceMph: paceMph) }
+    /// Positive means slower than the chart (the score). Uses the chart's ideal
+    /// time when entered; otherwise GPS distance at the fallback pace.
+    var timeDropped: TimeInterval {
+        if let idealTime { return duration - idealTime }
+        return TrailDash.timeDropped(elapsed: duration, distance: distance,
+                                     paceMph: RideSettings.standard.sprintFallbackPaceMph)
+    }
 }
 
-/// Time lost against the pace: elapsed time minus the time the distance
-/// takes at pace speed. Positive means behind pace (the score); negative, ahead.
-nonisolated func timeDropped(elapsed: TimeInterval, distance: Double, paceMph: Int) -> TimeInterval {
+/// Time lost against a pace: elapsed time minus the time the distance
+/// takes at pace speed. Positive means behind pace; negative, ahead.
+nonisolated func timeDropped(elapsed: TimeInterval, distance: Double, paceMph: Double) -> TimeInterval {
     guard paceMph > 0 else { return 0 }
-    let paceSpeed = Double(paceMph) / 2.236936 // m/s
+    let paceSpeed = paceMph / 2.236936 // m/s
     return elapsed - distance / paceSpeed
 }
 

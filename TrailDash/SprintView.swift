@@ -27,6 +27,12 @@ struct SprintView: View {
 
     private var idle: some View {
         VStack(spacing: 16) {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                Text(context.date.formatted(date: .omitted, time: .standard))
+                    .font(.system(size: 44, weight: .heavy, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+            }
             HStack(spacing: 12) {
                 stepButton("minus") { sprint.changeNextTest(by: -1) }
                 Text("NEXT: TEST \(sprint.nextTest)")

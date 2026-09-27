@@ -9,17 +9,19 @@ final class Ride {
     private(set) var log: RideLog?
     private var lastHeartRate: Int?
     private let liveActivity = RideLiveActivity()
-    let location = LocationTracker()
+    private let location: LocationTracker
 
     var isActive: Bool { startedAt != nil && endedAt == nil }
 
-    init() {
-        location.onFix = { [weak self] fix in
-            guard let self, self.isActive else { return }
-            self.stats.add(fix)
-            self.log?.append(.fix(fix))
-            self.liveActivity.update(bpm: self.lastHeartRate, distance: self.stats.distance)
-        }
+    init(location: LocationTracker) {
+        self.location = location
+    }
+
+    func add(_ fix: Fix) {
+        guard isActive else { return }
+        stats.add(fix)
+        log?.append(.fix(fix))
+        liveActivity.update(bpm: lastHeartRate, distance: stats.distance)
     }
 
     func start() {

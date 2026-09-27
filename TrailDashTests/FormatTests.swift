@@ -11,4 +11,13 @@ struct FormatTests {
         #expect(Format.duration(65) == "1:05")
         #expect(Format.duration(3725) == "1:02:05")
     }
+
+    @Test func mphFromMetersPerSecond() {
+        #expect(Format.mph(2.2352) == "5.0")
+    }
+
+    @Test func runTimeInTenths() {
+        #expect(Format.runTime(201.47) == "3:21.4")
+        #expect(Format.runTime(9.05) == "0:09.0")
+    }
 }

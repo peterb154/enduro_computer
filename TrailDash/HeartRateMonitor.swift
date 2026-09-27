@@ -7,6 +7,8 @@ import Foundation
 final class HeartRateMonitor: NSObject {
     private(set) var bpm: Int?
     private(set) var status = "Starting…"
+    /// Called for every HR sample, including repeats of the same value.
+    var onSample: ((Int) -> Void)?
 
     private static let heartRateService = CBUUID(string: "180D")
     private static let measurement = CBUUID(string: "2A37")
@@ -80,7 +82,8 @@ extension HeartRateMonitor: CBPeripheralDelegate {
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        guard let data = characteristic.value else { return }
-        bpm = parseHeartRate(data)
+        guard let data = characteristic.value, let sample = parseHeartRate(data) else { return }
+        bpm = sample
+        onSample?(sample)
     }
 }

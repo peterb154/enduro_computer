@@ -5,6 +5,16 @@ nonisolated enum Format {
         String(format: "%.1f", meters / 1609.344)
     }
 
+    static func mph(_ metersPerSecond: Double) -> String {
+        String(format: "%.1f", metersPerSecond * 2.236936)
+    }
+
+    /// m:ss.t for race timing (tenths, truncated like a stopwatch).
+    static func runTime(_ seconds: TimeInterval) -> String {
+        let tenths = Int((max(0, seconds) * 10).rounded(.down))
+        return String(format: "%d:%02d.%d", tenths / 600, (tenths % 600) / 10, tenths % 10)
+    }
+
     /// h:mm:ss, or m:ss under an hour.
     static func duration(_ seconds: TimeInterval) -> String {
         let total = Int(seconds)

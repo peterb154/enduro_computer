@@ -71,9 +71,9 @@ A timed race over a multi-mile woods loop. Laps are counted at a scoring chute.
 
 Multiple timed runs on a couple of different special tests, with pit time between.
 
-- **Arm → auto-start:** The rider arms the test (bar button). The clock starts when the bike starts moving: GPS speed > ~5 mph sustained ~1 s. Because GPS lags ~1 s, backdate the start to the first motion onset detected by CoreMotion within the preceding few seconds.
+- **Arm → auto-start:** The rider arms the test (bar button). The clock starts when the bike starts moving: GPS speed > ~5 mph sustained ~1 s. Because GPS lags ~1 s, backdate the start to the first fix of the current rolling streak (speed ≥ min moving speed), capped at 3 s. Fix timestamps are measurement times, so this also removes delivery lag. CoreMotion onset detection is deferred: 2-stroke idle vibration makes accelerometer onset unreliable. Revisit only if replayed logs show GPS-only starts are off.
 - **Stop:** The rider presses the bar button after crossing the finish. The run is saved and the app returns to idle, ready to arm again.
-- Label runs automatically (Test A run 1, Test B run 1, …). Allow renaming later.
+- Tests are numbered, not lettered. Label runs automatically (Test 1 run 1, Test 2 run 1, …; "T1 R2" where space is tight). Allow renaming later.
 - **Display:** HR, elapsed time, avg speed, test distance.
 - Post-session: compare runs of the same test.
 

@@ -7,5 +7,13 @@ nonisolated struct RideSettings {
     /// Below this GPS speed we treat the bike as stopped; stopped jitter inflates distance.
     var minMovingSpeed: Double = 1.0 // ~2.2 mph
 
+    // Sprint enduro auto-start
+    /// An armed test starts once GPS speed stays at or above this...
+    var sprintStartSpeed: Double = 2.24 // ~5 mph
+    /// ...for at least this long.
+    var sprintStartSustain: TimeInterval = 1
+    /// The start is backdated to when the bike began rolling, but never further than this.
+    var sprintMaxBackdate: TimeInterval = 3
+
     static let standard = RideSettings()
 }

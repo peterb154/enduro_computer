@@ -65,7 +65,8 @@ struct SprintView: View {
 
             HStack(spacing: 12) {
                 Button { showingSetup = true } label: {
-                    Label("Race setup", systemImage: "clock")
+                    Label(sprint.hasSelectedRace ? sprint.race.name : "Races", systemImage: "clock")
+                        .lineLimit(1)
                         .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 50)

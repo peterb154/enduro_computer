@@ -43,6 +43,7 @@ struct RaceScheduleTests {
     @Test func decodesSetupSavedBeforeChartSpeedExisted() throws {
         let old = #"{"raceStartMinutes":540,"keyTimeMinutes":560,"tests":[{"startMile":0,"startTime":32400,"endMile":8.8,"endTime":34220}]}"#
         let decoded = try JSONDecoder().decode(RaceSchedule.self, from: Data(old.utf8))
+        #expect(decoded.name == "My race")
         #expect(decoded.chartSpeedMph == nil)
         #expect(decoded.idealTime(for: 1) == TimeInterval(30 * 60 + 20))
     }
@@ -87,8 +88,9 @@ struct RaceScheduleTests {
     }
 
     @Test func survivesJSONRoundTrip() throws {
-        let data = try JSONEncoder().encode(race)
-        #expect(try JSONDecoder().decode(RaceSchedule.self, from: data) == race)
+        let original = race // `race` builds a new instance (and id) on each access
+        let data = try JSONEncoder().encode(original)
+        #expect(try JSONDecoder().decode(RaceSchedule.self, from: data) == original)
     }
 
     @Test func countdownPhases() {

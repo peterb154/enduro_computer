@@ -27,15 +27,38 @@ nonisolated struct ChartTest: Codable, Equatable, Identifiable {
     }
 }
 
-/// Key time and roll chart. The rider's due times are the chart times shifted
-/// by their key time offset (key time - race start).
-nonisolated struct RaceSchedule: Codable, Equatable {
+/// One saved race: key time and roll chart. The rider's due times are the
+/// chart times shifted by their key time offset (key time - race start).
+nonisolated struct RaceSchedule: Codable, Equatable, Identifiable {
+    var id = UUID()
+    var name = "New race"
     var raceStartMinutes = 10 * 60
     var keyTimeMinutes = 10 * 60
     /// The chart's speed average ("Start Speed"). Used when a test's end time isn't printed.
     var chartSpeedMph: Double?
     /// Index 0 is Test 1.
     var tests: [ChartTest] = []
+
+    init(id: UUID = UUID(), name: String = "New race", raceStartMinutes: Int = 10 * 60,
+         keyTimeMinutes: Int = 10 * 60, chartSpeedMph: Double? = nil, tests: [ChartTest] = []) {
+        self.id = id
+        self.name = name
+        self.raceStartMinutes = raceStartMinutes
+        self.keyTimeMinutes = keyTimeMinutes
+        self.chartSpeedMph = chartSpeedMph
+        self.tests = tests
+    }
+
+    /// Tolerates saves from before races had ids, names, or a chart speed.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? "My race"
+        raceStartMinutes = try c.decodeIfPresent(Int.self, forKey: .raceStartMinutes) ?? 10 * 60
+        keyTimeMinutes = try c.decodeIfPresent(Int.self, forKey: .keyTimeMinutes) ?? 10 * 60
+        chartSpeedMph = try c.decodeIfPresent(Double.self, forKey: .chartSpeedMph)
+        tests = try c.decodeIfPresent([ChartTest].self, forKey: .tests) ?? []
+    }
 
     var keyOffsetSeconds: Int { (keyTimeMinutes - raceStartMinutes) * 60 }
 

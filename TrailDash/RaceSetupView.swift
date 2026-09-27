@@ -1,55 +1,106 @@
 import SwiftUI
 
-/// Race morning setup: key time and each test's roll chart numbers.
+/// Saved races: pick the one to use, or open one to edit its roll chart.
 struct RaceSetupView: View {
     @Bindable var sprint: SprintSession
     @Environment(\.dismiss) private var dismiss
+    @State private var path: [UUID] = []
 
     var body: some View {
-        NavigationStack {
-            Form {
+        NavigationStack(path: $path) {
+            List {
                 Section {
-                    DatePicker("Race start", selection: timeBinding($sprint.race.raceStartMinutes),
-                               displayedComponents: .hourAndMinute)
-                    DatePicker("My key time", selection: timeBinding($sprint.race.keyTimeMinutes),
-                               displayedComponents: .hourAndMinute)
-                    LabeledContent("Offset", value: "\(sprint.race.keyOffsetSeconds / 60) min")
-                    NumberField(label: "Chart speed (mph)", value: $sprint.race.chartSpeedMph, placeholder: "mph")
-                } header: {
-                    Text("Roll chart")
-                } footer: {
-                    Text("Race start is the time the roll chart is based on; your due times are the chart times plus your offset. Chart speed (\"Start Speed\") works out test end times the chart doesn't print.")
-                }
-
-                // Identified by id, not index, so removing a test can't leave a field bound past the end.
-                ForEach($sprint.race.tests) { $test in
-                    testSection(number: (sprint.race.tests.firstIndex { $0.id == test.id } ?? 0) + 1, test: $test)
-                }
-
-                Section {
-                    Button("Add test") { sprint.race.addTest() }
-                    if !sprint.race.tests.isEmpty {
-                        Button("Remove last test", role: .destructive) { sprint.race.tests.removeLast() }
+                    Button { sprint.selectedRaceID = nil } label: {
+                        row(name: "No race (just timing)", selected: !sprint.hasSelectedRace)
                     }
+                    ForEach(sprint.races) { race in
+                        NavigationLink(value: race.id) {
+                            row(name: race.name, selected: race.id == sprint.selectedRaceID)
+                        }
+                    }
+                    .onDelete { sprint.deleteRaces(at: $0) }
                 } footer: {
-                    Text("Start: the whole-minute line where the test starts. End mile: the \"At\" mileage of the next reset. End time only if the chart prints it. Type times as digits: 94600 is 9:46:00.")
+                    Text("Tap a race to edit its roll chart. Swipe left to delete.")
+                }
+                Section {
+                    Button("New race") { path.append(sprint.newRace()) }
                 }
             }
-            .scrollDismissesKeyboard(.immediately)
-            .navigationTitle("Race setup")
+            .navigationTitle("Races")
+            .navigationDestination(for: UUID.self) { id in
+                if let index = sprint.races.firstIndex(where: { $0.id == id }) {
+                    RaceEditor(race: $sprint.races[index], sprint: sprint)
+                }
+            }
             .toolbar {
                 Button("Done") { dismiss() }
             }
         }
     }
 
+    private func row(name: String, selected: Bool) -> some View {
+        HStack {
+            Image(systemName: "checkmark").opacity(selected ? 1 : 0)
+            Text(name).foregroundStyle(.primary)
+        }
+    }
+}
+
+/// Race morning setup for one race: name, key time, and each test's roll chart numbers.
+struct RaceEditor: View {
+    @Binding var race: RaceSchedule
+    let sprint: SprintSession
+
+    var body: some View {
+        Form {
+            Section {
+                TextField("Name", text: $race.name)
+                if race.id == sprint.selectedRaceID {
+                    Label("In use", systemImage: "checkmark")
+                } else {
+                    Button("Use this race") { sprint.selectedRaceID = race.id }
+                }
+            }
+
+            Section {
+                DatePicker("Race start", selection: timeBinding($race.raceStartMinutes),
+                           displayedComponents: .hourAndMinute)
+                DatePicker("My key time", selection: timeBinding($race.keyTimeMinutes),
+                           displayedComponents: .hourAndMinute)
+                LabeledContent("Offset", value: "\(race.keyOffsetSeconds / 60) min")
+                NumberField(label: "Chart speed (mph)", value: $race.chartSpeedMph, placeholder: "mph")
+            } header: {
+                Text("Roll chart")
+            } footer: {
+                Text("Race start is the time the roll chart is based on; your due times are the chart times plus your offset. Chart speed (\"Start Speed\") works out test end times the chart doesn't print.")
+            }
+
+            // Identified by id, not index, so removing a test can't leave a field bound past the end.
+            ForEach($race.tests) { $test in
+                testSection(number: (race.tests.firstIndex { $0.id == test.id } ?? 0) + 1, test: $test)
+            }
+
+            Section {
+                Button("Add test") { race.addTest() }
+                if !race.tests.isEmpty {
+                    Button("Remove last test", role: .destructive) { race.tests.removeLast() }
+                }
+            } footer: {
+                Text("Start: the whole-minute line where the test starts. End mile: the \"At\" mileage of the next reset. End time only if the chart prints it. Type times as digits: 94600 is 9:46:00.")
+            }
+        }
+        .scrollDismissesKeyboard(.immediately)
+        .navigationTitle(race.name)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
     private func testSection(number: Int, test: Binding<ChartTest>) -> some View {
         Section {
             // Same order as a chart line: mile, then time.
             NumberField(label: "Start mile", value: test.startMile, placeholder: "mile")
-            ChartTimeField(label: "Start time", seconds: test.startTime, raceStartMinutes: sprint.race.raceStartMinutes)
+            ChartTimeField(label: "Start time", seconds: test.startTime, raceStartMinutes: race.raceStartMinutes)
             NumberField(label: "End mile", value: test.endMile, placeholder: "mile")
-            ChartTimeField(label: "End time", seconds: test.endTime, raceStartMinutes: sprint.race.raceStartMinutes,
+            ChartTimeField(label: "End time", seconds: test.endTime, raceStartMinutes: race.raceStartMinutes,
                            placeholder: "optional")
         } header: {
             Text("Test \(number)")
@@ -61,7 +112,6 @@ struct RaceSetupView: View {
 
     /// e.g. "Your start 10:06:00 · 9.50 mi · ideal 28:30 · ends 10:14:30 · 20.0 mph"
     private func summary(number: Int, test: ChartTest) -> String {
-        let race = sprint.race
         var parts: [String] = []
         if let due = race.dueSeconds(for: number) { parts.append("Your start \(Format.clock(seconds: due))") }
         if let miles = test.lengthMiles { parts.append(String(format: "%.2f mi", miles)) }

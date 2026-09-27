@@ -7,9 +7,33 @@ import Foundation
 final class SprintSession {
     /// The test that the next arm will time. Advances after each run.
     private(set) var nextTest = 1
-    /// Key time and roll chart, entered the morning of the race. Saved across app restarts.
-    var race = SprintSession.load(RaceSchedule.self, key: "race") ?? RaceSchedule() {
-        didSet { Self.save(race, key: "race") }
+    /// Saved races (key time + roll chart), kept across app restarts and sessions.
+    var races: [RaceSchedule] = SprintSession.loadRaces() {
+        didSet { Self.save(races, key: "races") }
+    }
+    /// The race used for countdowns and scoring; nil means plain timing, no chart.
+    var selectedRaceID: UUID? = UserDefaults.standard.string(forKey: "selectedRaceID").flatMap(UUID.init) {
+        didSet { UserDefaults.standard.set(selectedRaceID?.uuidString, forKey: "selectedRaceID") }
+    }
+
+    /// The selected race, or an empty one (no tests) when none is selected.
+    var race: RaceSchedule {
+        races.first { $0.id == selectedRaceID } ?? RaceSchedule(name: "No race")
+    }
+    var hasSelectedRace: Bool { races.contains { $0.id == selectedRaceID } }
+
+    /// Adds a race, selects it, and returns its id for editing.
+    @discardableResult
+    func newRace() -> UUID {
+        let race = RaceSchedule(name: "Race \(races.count + 1)")
+        races.append(race)
+        selectedRaceID = race.id
+        return race.id
+    }
+
+    func deleteRaces(at offsets: IndexSet) {
+        races.remove(atOffsets: offsets)
+        if !hasSelectedRace { selectedRaceID = nil }
     }
     private(set) var timer = SprintTimer()
     private(set) var runs: [SprintRun] = []
@@ -46,7 +70,7 @@ final class SprintSession {
 
     func arm() {
         if log == nil {
-            // Test number and race setup are the rider's pre-race setup; keep them.
+            // Test number and race selection are the rider's pre-race setup; keep them.
             runs = []
             finishedLog = nil
             log = RideLog(startedAt: .now)
@@ -84,9 +108,8 @@ final class SprintSession {
         finishedLog = log
         log = nil
         location.setBackgroundUpdates(false)
-        // Ready for the next event's setup. Results stay on screen until the next arm.
+        // Results stay on screen until the next arm; saved races are kept.
         nextTest = 1
-        race = RaceSchedule()
     }
 
     func add(_ fix: Fix) {
@@ -104,6 +127,14 @@ final class SprintSession {
         guard isSessionOpen else { return }
         log?.append(.heartRate(heartRate, at: .now))
         timer.add(heartRate: heartRate)
+    }
+
+    /// Loads saved races, migrating the single race saved by earlier versions.
+    private static func loadRaces() -> [RaceSchedule] {
+        if let races = load([RaceSchedule].self, key: "races") { return races }
+        guard let old = load(RaceSchedule.self, key: "race") else { return [] }
+        UserDefaults.standard.set(old.id.uuidString, forKey: "selectedRaceID")
+        return [old]
     }
 
     private static func load<T: Decodable>(_ type: T.Type, key: String) -> T? {

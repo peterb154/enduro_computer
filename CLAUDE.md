@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state & commands
 
-Early prototype, Phase 1. Commit and push straight to `main` (no branches/PRs) until the app works on the bike.
+Phase 1 (Trail MVP) is built and verified on the phone (walk + bicycle): HR from any BLE HR device (tested with a Garmin watch broadcasting HR), background GPS ride stats, raw `.jsonl` log + GPX export, lock screen Live Activity. Not yet tested on the motorcycle. Next: Phase 2, starting with the replay harness, using real ride logs from the Files app.
+
+Commit and push straight to `main` (no branches/PRs) until the app works on the bike.
 
 - `project.yml` is the source of truth for the Xcode project (XcodeGen). `TrailDash.xcodeproj` and `Info.plist` are generated and gitignored; never edit them by hand.
 - Regenerate after adding/removing files or changing `project.yml`: `xcodegen generate`

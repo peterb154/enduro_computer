@@ -48,11 +48,12 @@ struct BigStat: View {
     let value: String
     let label: String
     var color: Color = .white
+    var size: CGFloat = 56
 
     var body: some View {
         VStack(spacing: 0) {
             Text(value)
-                .font(.system(size: 56, weight: .bold, design: .rounded))
+                .font(.system(size: size, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)

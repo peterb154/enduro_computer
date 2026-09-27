@@ -25,12 +25,35 @@ nonisolated struct SprintRun: Identifiable, Equatable {
     }
 }
 
-/// When the test clock officially started. A rider who leaves late is timed from
-/// their due minute; early or on time, from when they rolled. No due time (or a
-/// due time implausibly far back) means rolling time.
+/// When the test clock officially started: the rider's due minute, early or late,
+/// since that's what the check counts from. No due time, or rolling implausibly far
+/// from it (wrong test/race selected, or a practice roll), means rolling time.
 nonisolated func officialStart(rolling: Date, due: Date?, settings: RideSettings = .standard) -> Date {
-    guard let due, due < rolling, rolling.timeIntervalSince(due) <= settings.sprintMaxLateStart else { return rolling }
+    guard let due else { return rolling }
+    let late = rolling.timeIntervalSince(due)
+    guard late <= settings.sprintMaxLateStart, -late <= settings.sprintMaxEarlyStart else { return rolling }
     return due
+}
+
+/// When a run ended: the press, unless the bike had already been stopped a while,
+/// in which case when it stopped moving.
+nonisolated func officialStop(pressed: Date, lastMoving: Date?, settings: RideSettings = .standard) -> Date {
+    guard let lastMoving, lastMoving < pressed,
+          pressed.timeIntervalSince(lastMoving) > settings.sprintStoppedGrace else { return pressed }
+    return lastMoving
+}
+
+nonisolated enum SpeedTrend: Equatable {
+    case up, flat, down
+}
+
+/// Is the last minute faster or slower than the test average? Answers
+/// "I just turned up the heat; is it helping?"
+nonisolated func speedTrend(recent: Double?, average: Double, band: Double = RideSettings.standard.sprintTrendBand) -> SpeedTrend {
+    guard let recent else { return .flat }
+    if recent > average + band { return .up }
+    if recent < average - band { return .down }
+    return .flat
 }
 
 /// Time lost against a pace: elapsed time minus the time the distance
@@ -59,6 +82,10 @@ nonisolated struct SprintTimer {
     private(set) var stats: TripStats
     /// Fixes since the bike started rolling, while armed.
     private var launch: [Fix] = []
+    /// Time of the last fix at moving speed while running.
+    private(set) var lastMoving: Date?
+    /// Recent (fix time, run distance) samples while running, for the speed trend.
+    private var history: [(time: Date, distance: Double)] = []
 
     init(settings: RideSettings = .standard) {
         self.settings = settings
@@ -86,6 +113,10 @@ nonisolated struct SprintTimer {
             return
         case .running:
             stats.add(fix)
+            if fix.speed >= settings.minMovingSpeed { lastMoving = fix.time }
+            history.append((fix.time, stats.distance))
+            let keep = settings.sprintTrendWindow * 1.5
+            history.removeAll { fix.time.timeIntervalSince($0.time) > keep }
         case .armed:
             watchForLaunch(fix)
         }
@@ -94,6 +125,15 @@ nonisolated struct SprintTimer {
     mutating func add(heartRate: Int) {
         guard isRunning else { return }
         stats.add(heartRate: heartRate)
+    }
+
+    /// Average speed over the last `sprintTrendWindow` of fixes (m/s), once there's
+    /// at least a third of a window of history.
+    func recentSpeed() -> Double? {
+        guard let last = history.last,
+              let first = history.first(where: { last.time.timeIntervalSince($0.time) <= settings.sprintTrendWindow }),
+              last.time.timeIntervalSince(first.time) >= settings.sprintTrendWindow / 3 else { return nil }
+        return (last.distance - first.distance) / last.time.timeIntervalSince(first.time)
     }
 
     /// Moves the start of a running test, e.g. back to the rider's due time when late.
@@ -132,6 +172,8 @@ nonisolated struct SprintTimer {
             stats.add(launchFix)
         }
         launch = []
+        history = []
+        lastMoving = lastFix.time
         state = .running(start: start)
     }
 }

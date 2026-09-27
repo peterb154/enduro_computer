@@ -89,8 +89,11 @@ final class SprintSession {
     }
 
     /// `time` is when the rider started pressing stop, so the hold doesn't add time.
-    func stop(at time: Date) {
+    /// If the bike had already stopped, the run ends when it stopped moving instead.
+    func stop(at pressed: Date) {
+        let time = officialStop(pressed: pressed, lastMoving: timer.lastMoving)
         guard let result = timer.stop() else { return }
+        if time != pressed { log?.append(.mark("pressed stop", at: pressed)) }
         let run = SprintRun(
             test: nextTest,
             start: result.start,

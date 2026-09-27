@@ -4,31 +4,46 @@ struct TrailView: View {
     let ride: Ride
     let heartRate: HeartRateMonitor
     let location: LocationTracker
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
         VStack(spacing: 16) {
             StatusLine(heartRate: heartRate, location: location)
-            HeartRateNumber(bpm: heartRate.bpm)
-            if ride.isActive {
-                liveStats
-            } else if ride.endedAt != nil {
-                summary
+            if verticalSizeClass == .compact {
+                // Landscape: HR on the left half, everything else on the right, so nothing shrinks.
+                HStack(spacing: 24) {
+                    HeartRateNumber(bpm: heartRate.bpm)
+                    VStack(spacing: 12) { details; startStopButton }
+                }
+            } else {
+                HeartRateNumber(bpm: heartRate.bpm)
+                details
+                startStopButton
             }
-            startStopButton
         }
         .sensoryFeedback(.success, trigger: ride.isActive)
     }
 
+    @ViewBuilder
+    private var details: some View {
+        if ride.isActive {
+            liveStats
+        } else if ride.endedAt != nil {
+            summary
+        }
+    }
+
     private var liveStats: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
+            let size: CGFloat = verticalSizeClass == .compact ? 64 : 56
             VStack(spacing: 8) {
                 HStack {
-                    BigStat(value: Format.duration(ride.elapsed(at: context.date)), label: "TIME")
-                    BigStat(value: Format.miles(ride.stats.distance), label: "MI")
+                    BigStat(value: Format.duration(ride.elapsed(at: context.date)), label: "TIME", size: size)
+                    BigStat(value: Format.miles(ride.stats.distance), label: "MI", size: size)
                 }
                 HStack {
-                    BigStat(value: Format.mph(ride.averageSpeed(at: context.date)), label: "AVG MPH")
-                    BigStat(value: Format.mph(ride.stats.movingAverageSpeed), label: "MOVING MPH")
+                    BigStat(value: Format.mph(ride.averageSpeed(at: context.date)), label: "AVG MPH", size: size)
+                    BigStat(value: Format.mph(ride.stats.movingAverageSpeed), label: "MOVING MPH", size: size)
                 }
             }
         }

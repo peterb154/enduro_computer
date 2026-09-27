@@ -7,6 +7,7 @@ struct SprintView: View {
     /// When the rider's thumb first hit STOP; the run ends here, not when the hold completes.
     @State private var stopPressedAt: Date?
     @State private var showingSetup = false
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
         VStack(spacing: 16) {
@@ -107,10 +108,10 @@ struct SprintView: View {
     // MARK: Armed: waiting for launch
 
     private var armed: some View {
-        VStack(spacing: 16) {
-            HeartRateNumber(bpm: heartRate.bpm)
+        let details = VStack(spacing: 12) {
             Text("ARMED")
                 .font(.system(size: 72, weight: .heavy))
+                .minimumScaleFactor(0.5)
                 .foregroundStyle(.yellow)
             if let due = sprint.nextTestDue() {
                 DueCountdown(test: sprint.nextTest, due: due)
@@ -121,41 +122,80 @@ struct SprintView: View {
             BigButtonLabel(title: "HOLD TO DISARM", color: .gray)
                 .onLongPressGesture(minimumDuration: 1) { sprint.disarm() }
         }
-    }
-
-    // MARK: Running
-
-    private func running(since start: Date) -> some View {
-        VStack(spacing: 16) {
-            HeartRateNumber(bpm: heartRate.bpm)
-            TimelineView(.periodic(from: .now, by: 0.1)) { context in
-                let elapsed = context.date.timeIntervalSince(start)
-                let distance = sprint.timer.stats.distance
-                let dropped = timeDropped(elapsed: elapsed, distance: distance, paceMph: sprint.livePaceMph)
-                VStack(spacing: 8) {
-                    HStack {
-                        BigStat(value: Format.runTime(elapsed), label: "TIME")
-                        BigStat(value: Format.signedMinutes(dropped), label: "DROPPED",
-                                color: dropped > 0 ? .red : .green)
-                    }
-                    HStack {
-                        BigStat(value: Format.mph(elapsed > 0 ? distance / elapsed : 0), label: "AVG MPH")
-                        if let length = sprint.chartLengthMiles {
-                            BigStat(value: String(format: "%.1f", milesToGo(lengthMiles: length, distanceMeters: distance)),
-                                    label: "TO GO")
-                        } else {
-                            BigStat(value: Format.miles(distance), label: "MI")
-                        }
-                    }
+        return Group {
+            if isLandscape {
+                HStack(spacing: 24) {
+                    HeartRateNumber(bpm: heartRate.bpm)
+                    details
+                }
+            } else {
+                VStack(spacing: 16) {
+                    HeartRateNumber(bpm: heartRate.bpm)
+                    details
                 }
             }
-            BigButtonLabel(title: "HOLD TO STOP", color: .red)
-                .onLongPressGesture(minimumDuration: 0.5) {
-                    sprint.stop(at: stopPressedAt ?? .now)
-                    stopPressedAt = nil
-                } onPressingChanged: { pressing in
-                    stopPressedAt = pressing ? .now : stopPressedAt
+        }
+    }
+
+    // MARK: Running: HR, miles to go, time, speed trend. Hold anywhere to stop.
+
+    private var isLandscape: Bool { verticalSizeClass == .compact }
+
+    private func running(since start: Date) -> some View {
+        TimelineView(.periodic(from: .now, by: 0.1)) { context in
+            let elapsed = context.date.timeIntervalSince(start)
+            let distance = sprint.timer.stats.distance
+            let average = elapsed > 0 ? distance / elapsed : 0
+            let trend = speedTrend(recent: sprint.timer.recentSpeed(), average: average)
+            let size: CGFloat = isLandscape ? 76 : 64
+            let toGo = sprint.chartLengthMiles.map { length in
+                BigStat(value: String(format: "%.1f", milesToGo(lengthMiles: length, distanceMeters: distance)),
+                        label: "TO GO", size: size)
+            } ?? BigStat(value: Format.miles(distance), label: "MI", size: size)
+            let time = BigStat(value: Format.runTime(elapsed), label: "TIME", size: size)
+            let speed = BigStat(value: "\(Format.mph(average)) \(arrow(trend))", label: "AVG MPH",
+                                color: color(trend), size: size)
+            let hint = Text("HOLD ANYWHERE TO STOP")
+                .font(.system(size: 20, weight: .heavy))
+                .foregroundStyle(.red)
+
+            if isLandscape {
+                HStack(spacing: 24) {
+                    HeartRateNumber(bpm: heartRate.bpm)
+                    VStack(spacing: 8) { toGo; time; speed; hint }
                 }
+            } else {
+                VStack(spacing: 16) {
+                    HeartRateNumber(bpm: heartRate.bpm)
+                    HStack { toGo; time }
+                    speed
+                    hint
+                }
+            }
+        }
+        // The whole screen is the stop button: no aiming with gloves.
+        .contentShape(Rectangle())
+        .onLongPressGesture(minimumDuration: 0.5) {
+            sprint.stop(at: stopPressedAt ?? .now)
+            stopPressedAt = nil
+        } onPressingChanged: { pressing in
+            stopPressedAt = pressing ? .now : stopPressedAt
+        }
+    }
+
+    private func arrow(_ trend: SpeedTrend) -> String {
+        switch trend {
+        case .up: "▲"
+        case .flat: ""
+        case .down: "▼"
+        }
+    }
+
+    private func color(_ trend: SpeedTrend) -> Color {
+        switch trend {
+        case .up: .green
+        case .flat: .white
+        case .down: .red
         }
     }
 }

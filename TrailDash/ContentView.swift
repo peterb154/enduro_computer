@@ -29,6 +29,8 @@ struct ContentView: View {
             if let bpm { ride.add(heartRate: bpm) }
         }
         .sensoryFeedback(.success, trigger: ride.isActive)
+        // Screen never sleeps while the app is open, riding or not.
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
     }
 
     private var statusLine: some View {

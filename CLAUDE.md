@@ -93,7 +93,7 @@ Multiple timed runs on a couple of different special tests, with pit time betwee
 
 - Readable at arm's length through goggles in sun and shade. Huge numerals, minimal labels, dark background, no decorative UI.
 - Landscape and portrait both supported. The bar pad orientation is TBD.
-- Screen never sleeps during an active session (`isIdleTimerDisabled`).
+- Screen never sleeps while the app is open (`isIdleTimerDisabled`), not just during a session.
 - Visual + haptic/audio cue on lap counted, test armed, test started, and test stopped. The rider can't read confirmations mid-race.
 
 ## Build phases

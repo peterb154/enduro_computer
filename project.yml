@@ -14,7 +14,9 @@ targets:
   TrailDash:
     type: application
     platform: iOS
-    sources: [TrailDash]
+    sources: [TrailDash, Shared]
+    dependencies:
+      - target: TrailDashWidgets
     scheme:
       testTargets: [TrailDashTests]
     info:
@@ -28,6 +30,7 @@ targets:
         UIBackgroundModes: [bluetooth-central, location]
         # Ride files show up in the Files app under On My iPhone > TrailDash
         UIFileSharingEnabled: true
+        NSSupportsLiveActivities: true
         LSSupportsOpeningDocumentsInPlace: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -46,3 +49,18 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
+  TrailDashWidgets:
+    type: app-extension
+    platform: iOS
+    sources: [TrailDashWidgets, Shared]
+    info:
+      path: TrailDashWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: TrailDash
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.peterb154.TrailDash.Widgets
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO

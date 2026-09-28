@@ -99,7 +99,7 @@ Several timed tests (8+ is common), ridden once each **in order**, separated by 
 ## Display principles
 
 - Readable at arm's length through goggles in sun and shade. Huge numerals, minimal labels, dark background, no decorative UI.
-- Landscape and portrait both supported. The bar pad orientation is TBD.
+- Landscape and portrait both supported, with a rotation lock (Auto / Portrait / Landscape) next to the mode picker, remembered across launches.
 - Screen never sleeps while the app is open (`isIdleTimerDisabled`), not just during a session.
 - Visual + haptic/audio cue on lap counted, test armed, test started, and test stopped. The rider can't read confirmations mid-race.
 

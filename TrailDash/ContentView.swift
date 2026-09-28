@@ -3,25 +3,37 @@ import SwiftUI
 struct ContentView: View {
     @State private var model = AppModel()
     @AppStorage("orientationLock") private var orientation = OrientationLock.auto
+    @State private var showingSettings = false
+
+    /// Settings are reachable whenever nothing is being timed, including between tests.
+    private var settingsAvailable: Bool {
+        !model.ride.isActive && model.sprint.timer.state == .idle
+    }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
             VStack(spacing: 12) {
-                if !model.isBusy {
+                if !model.isBusy || settingsAvailable {
                     HStack(spacing: 12) {
-                        Picker("Mode", selection: $model.mode) {
-                            ForEach(Mode.allCases, id: \.self) { Text($0.rawValue) }
+                        if !model.isBusy {
+                            Picker("Mode", selection: $model.mode) {
+                                ForEach(Mode.allCases, id: \.self) { Text($0.rawValue) }
+                            }
+                            .pickerStyle(.segmented)
+                        } else {
+                            Spacer()
                         }
-                        .pickerStyle(.segmented)
-                        Button { orientation = orientation.next } label: {
-                            Label(orientation.rawValue.capitalized, systemImage: orientation.icon)
-                                .font(.system(size: 15, weight: .semibold))
-                                .frame(minWidth: 110, minHeight: 32)
-                                .foregroundStyle(.white)
-                                .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 8))
+                        if settingsAvailable {
+                            Button { showingSettings = true } label: {
+                                Image(systemName: "gearshape.fill")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .frame(width: 56, height: 32)
+                                    .foregroundStyle(.white)
+                                    .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 switch model.mode {
@@ -39,6 +51,9 @@ struct ContentView: View {
             orientation.apply()
         }
         .onChange(of: orientation) { _, lock in lock.apply() }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(sprint: model.sprint, ride: model.ride, heartRate: model.heartRate, location: model.location)
+        }
     }
 }
 

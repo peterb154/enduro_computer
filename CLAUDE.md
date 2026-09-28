@@ -16,7 +16,7 @@ Commit and push straight to `main` (no branches/PRs) until the app works on the 
 - Unit tests (Swift Testing), run on the phone: `xcodebuild test -scheme TrailDash -destination 'id=<UDID>' -derivedDataPath build -allowProvisioningUpdates`; add `-only-testing:TrailDashTests/<Suite>/<test>()` for one test. Simulator also works with `-destination 'platform=iOS Simulator,name=iPhone 18 Pro'` once its runtime mounts.
 - Screenshot the phone (to check layouts): `xcrun devicectl device capture screenshot --device <UDID> --destination screen.png`
 - Find the UDID: `xcrun devicectl list devices` (target phone is an iPhone 13: no Dynamic Island, so Live Activities show on the lock screen only)
-- BLE and real GPS only work on the physical iPhone, not the simulator. For desk testing, Races sheet → Desk practice → Simulate riding feeds fake fixes at a chosen speed through the normal `LocationTracker.onFix` path (status line shows SIM).
+- BLE and real GPS only work on the physical iPhone, not the simulator. For desk testing, Settings (gear) → Desk practice → Simulate riding feeds fake fixes at a chosen speed through the normal `LocationTracker.onFix` path (status line shows SIM).
 - Signing: free Apple ID (personal team). Installs expire after 7 days; reinstall from Xcode. No TestFlight until a paid account exists.
 
 # TrailDash (working name)
@@ -100,7 +100,8 @@ Several timed tests (8+ is common), ridden once each **in order**, separated by 
 ## Display principles
 
 - Readable at arm's length through goggles in sun and shade. Huge numerals, minimal labels, dark background, no decorative UI.
-- Landscape and portrait both supported, with a rotation lock (Auto / Portrait / Landscape) next to the mode picker, remembered across launches.
+- Landscape and portrait both supported, with a rotation lock (Auto / Portrait / Landscape) in Settings, remembered across launches.
+- Settings (gear next to the mode picker; hidden while a ride or test is being timed): races and roll charts, rotation, HR device, share last ride/session logs, session reset, desk practice. Riding screens keep only what's needed on the bike.
 - Screen never sleeps while the app is open (`isIdleTimerDisabled`), not just during a session.
 - Visual + haptic/audio cue on lap counted, test armed, test started, and test stopped. The rider can't read confirmations mid-race.
 

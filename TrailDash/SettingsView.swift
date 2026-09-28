@@ -1,9 +1,13 @@
 import SwiftUI
 
-/// Saved races: pick the one to use, or open one to edit its roll chart.
-struct RaceSetupView: View {
+/// Everything that isn't riding: races and roll charts, display, heart rate
+/// device, logs, session reset, and desk practice.
+struct SettingsView: View {
     @Bindable var sprint: SprintSession
+    let ride: Ride
+    let heartRate: HeartRateMonitor
     let location: LocationTracker
+    @AppStorage("orientationLock") private var orientation = OrientationLock.auto
     @Environment(\.dismiss) private var dismiss
     @State private var path: [UUID] = []
     @State private var confirmingReset = false
@@ -21,16 +25,26 @@ struct RaceSetupView: View {
                         }
                     }
                     .onDelete { sprint.deleteRaces(at: $0) }
-                } footer: {
-                    Text("Tap a race to edit its roll chart. Swipe left to delete.")
-                }
-                Section {
                     Button("New race") { path.append(sprint.newRace()) }
+                } header: {
+                    Text("Races")
+                } footer: {
+                    Text("Check the race to use for sprint mode. Tap to edit its roll chart; swipe left to delete.")
                 }
-                practiceSection
+                Section("Display") {
+                    Picker("Rotation", selection: $orientation) {
+                        ForEach(OrientationLock.allCases, id: \.self) { lock in
+                            Label(lock.rawValue.capitalized, systemImage: lock.icon).tag(lock)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+                HeartRateDeviceSection(heartRate: heartRate)
+                logsSection
                 sessionSection
+                practiceSection
             }
-            .navigationTitle("Races")
+            .navigationTitle("Settings")
             .navigationDestination(for: UUID.self) { id in
                 if let index = sprint.races.firstIndex(where: { $0.id == id }) {
                     RaceEditor(race: $sprint.races[index], sprint: sprint)
@@ -39,6 +53,31 @@ struct RaceSetupView: View {
             .toolbar {
                 Button("Done") { dismiss() }
             }
+        }
+    }
+
+    private var logsSection: some View {
+        Section {
+            if ride.endedAt != nil, let log = ride.log {
+                shareLink("Last trail ride", log: log)
+            }
+            if let log = sprint.finishedLog {
+                shareLink("Last sprint session", log: log)
+            }
+            if ride.endedAt == nil && sprint.finishedLog == nil {
+                Text("Finish a ride or end a sprint session to share it here.")
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text("Logs")
+        } footer: {
+            Text("Shares the GPX and raw log. Every ride is also in the Files app under On My iPhone > TrailDash.")
+        }
+    }
+
+    private func shareLink(_ title: String, log: RideLog) -> some View {
+        ShareLink(items: [log.gpxURL, log.logURL]) {
+            Label(title, systemImage: "square.and.arrow.up")
         }
     }
 

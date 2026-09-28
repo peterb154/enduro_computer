@@ -6,7 +6,6 @@ struct SprintView: View {
     let location: LocationTracker
     /// When the rider's thumb first hit STOP; the run ends here, not when the hold completes.
     @State private var stopPressedAt: Date?
-    @State private var showingSetup = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
@@ -22,7 +21,6 @@ struct SprintView: View {
             }
         }
         .sensoryFeedback(.impact(weight: .heavy), trigger: sprint.timer.state)
-        .sheet(isPresented: $showingSetup) { RaceSetupView(sprint: sprint, location: location) }
     }
 
     // MARK: Idle: next test, results so far, arm
@@ -94,27 +92,13 @@ struct SprintView: View {
         }
         .buttonStyle(.plain)
 
-        HStack(spacing: 12) {
-            Button { showingSetup = true } label: {
-                Label(sprint.hasSelectedRace ? sprint.race.name : "Races", systemImage: "clock")
-                    .lineLimit(1)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
-            }
-            .buttonStyle(.plain)
-            if sprint.isSessionOpen {
-                Text("Hold to end session")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
-                    .onLongPressGesture(minimumDuration: 1) { sprint.endSession() }
-            }
-        }
-        if !sprint.isSessionOpen, let log = sprint.finishedLog {
-            ShareButton(log: log)
+        if sprint.isSessionOpen {
+            Text("Hold to end session")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
+                .onLongPressGesture(minimumDuration: 1) { sprint.endSession() }
         }
     }
 

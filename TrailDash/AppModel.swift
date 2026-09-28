@@ -9,7 +9,10 @@ enum Mode: String, CaseIterable {
 /// Each mode ignores samples while it isn't active.
 @Observable
 final class AppModel {
-    var mode = Mode.trail
+    /// Remembered across launches so the app reopens where the rider left it.
+    var mode = Mode(rawValue: UserDefaults.standard.string(forKey: "mode") ?? "") ?? .trail {
+        didSet { UserDefaults.standard.set(mode.rawValue, forKey: "mode") }
+    }
     let heartRate = HeartRateMonitor()
     let location = LocationTracker()
     let ride: Ride

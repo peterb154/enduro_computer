@@ -64,9 +64,6 @@ struct TrailView: View {
             .monospacedDigit()
             .foregroundStyle(.white)
 
-            if let log = ride.log {
-                ShareButton(log: log)
-            }
         }
     }
 
@@ -79,20 +76,6 @@ struct TrailView: View {
         } else {
             Button { ride.start() } label: { BigButtonLabel(title: "START", color: .green) }
                 .buttonStyle(.plain)
-        }
-    }
-}
-
-struct ShareButton: View {
-    let log: RideLog
-
-    var body: some View {
-        ShareLink(items: [log.gpxURL, log.logURL]) {
-            Label("Share GPX + log", systemImage: "square.and.arrow.up")
-                .font(.system(size: 24, weight: .bold))
-                .frame(maxWidth: .infinity, minHeight: 60)
-                .background(.blue, in: RoundedRectangle(cornerRadius: 16))
-                .foregroundStyle(.white)
         }
     }
 }

@@ -11,11 +11,17 @@ nonisolated struct SprintRun: Identifiable, Equatable {
     let maxHeartRate: Int?
     /// Roll chart time for this test, if entered.
     let idealTime: TimeInterval?
+    /// When the bike actually started moving; differs from `start` when the run
+    /// is timed from the rider's due minute.
+    var rolled: Date? = nil
 
     var label: String { "Test \(test)" }
     var duration: TimeInterval { end.timeIntervalSince(start) }
-    /// Includes any stops, which is what matters for racing.
-    var averageSpeed: Double { duration > 0 ? distance / duration : 0 }
+    /// Over actual riding time (from rolling), stops included.
+    var averageSpeed: Double {
+        let riding = end.timeIntervalSince(rolled ?? start)
+        return riding > 0 ? distance / riding : 0
+    }
     /// Positive means slower than the chart (the score). Uses the chart's ideal
     /// time when entered; otherwise GPS distance at the fallback pace.
     var timeDropped: TimeInterval {
@@ -82,6 +88,8 @@ nonisolated struct SprintTimer {
     private(set) var stats: TripStats
     /// Fixes since the bike started rolling, while armed.
     private var launch: [Fix] = []
+    /// When the bike started rolling. The run's official start may differ (due minute).
+    private(set) var rolledAt: Date?
     /// Time of the last fix at moving speed while running.
     private(set) var lastMoving: Date?
     /// Recent (fix time, run distance) samples while running, for the speed trend.
@@ -143,6 +151,14 @@ nonisolated struct SprintTimer {
     }
 
     /// Ends the run and returns its start time and stats, or nil if not running.
+    /// Average speed over actual riding time so far (m/s): distance since rolling,
+    /// divided by time since rolling. Not skewed when timed from the due minute.
+    func ridingAverageSpeed(at now: Date) -> Double {
+        guard let rolledAt else { return 0 }
+        let riding = now.timeIntervalSince(rolledAt)
+        return riding > 0 ? stats.distance / riding : 0
+    }
+
     mutating func stop() -> (start: Date, stats: TripStats)? {
         guard case .running(let start) = state else { return nil }
         state = .idle
@@ -174,6 +190,7 @@ nonisolated struct SprintTimer {
         launch = []
         history = []
         lastMoving = lastFix.time
+        rolledAt = start
         state = .running(start: start)
     }
 }

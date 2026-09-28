@@ -109,7 +109,8 @@ final class SprintSession {
             distance: result.stats.distance,
             averageHeartRate: result.stats.averageHeartRate,
             maxHeartRate: result.stats.maxHeartRate,
-            idealTime: race.idealTime(for: nextTest)
+            idealTime: race.idealTime(for: nextTest),
+            rolled: timer.rolledAt
         )
         runs.append(run)
         nextTest += 1

@@ -9,9 +9,17 @@ struct StatusLine: View {
     var body: some View {
         HStack {
             Button { showingDevices = true } label: {
-                Label(heartRate.status, systemImage: "heart")
-                    .lineLimit(1)
-                    .frame(minHeight: 32)
+                HStack(spacing: 4) {
+                    Label(heartRate.status, systemImage: "heart")
+                        .lineLimit(1)
+                    if let battery = heartRate.batteryPercent {
+                        // Red while there's still time to swap the battery before a race.
+                        Text("· \(battery)%")
+                            .foregroundStyle(battery < 20 ? .red : .gray)
+                            .fixedSize()
+                    }
+                }
+                .frame(minHeight: 32)
             }
             .buttonStyle(.plain)
             Spacer()

@@ -63,7 +63,7 @@ struct SprintView: View {
             if let due = sprint.nextTestDue() {
                 DueCountdown(test: sprint.nextTest, due: due)
                 if let miles = sprint.transferMilesToGo {
-                    TransferPanel(miles: miles, due: due)
+                    TransferPanel(miles: miles, due: due, location: location)
                 }
             }
             HStack(spacing: 12) {
@@ -174,7 +174,9 @@ struct SprintView: View {
         TimelineView(.periodic(from: .now, by: 0.1)) { context in
             let elapsed = context.date.timeIntervalSince(start)
             let distance = sprint.timer.stats.distance
-            let average = elapsed > 0 ? distance / elapsed : 0
+            // Speed uses riding time (from rolling), not the official clock, which may
+            // start at the due minute and would skew the average early in the test.
+            let average = sprint.timer.ridingAverageSpeed(at: context.date)
             let trend = speedTrend(recent: sprint.timer.recentSpeed(), average: average)
             let size: CGFloat = isLandscape ? 76 : 64
             let toGo = sprint.chartLengthMiles.map { length in
@@ -266,19 +268,24 @@ struct RunList: View {
     }
 }
 
-/// Between tests: miles to the next start and the speed needed to make it on time.
-/// Low number: ease off and let HR come down. High: haul.
+/// Between tests: miles to the next start, the speed needed to make it on time,
+/// and live speed (green when at or above what's needed). Low need: ease off and
+/// let HR come down. High: haul.
 struct TransferPanel: View {
     let miles: Double
     let due: Date
+    let location: LocationTracker
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let needed = requiredMph(miles: miles, secondsLeft: due.timeIntervalSince(context.date))
+            let live = max(0, location.lastFix?.speed ?? 0) * 2.236936
             HStack {
                 BigStat(value: String(format: "%.1f", miles), label: "MI TO START")
                 BigStat(value: needed.map { String(format: "%.0f", $0) } ?? "LATE",
                         label: "NEED MPH", color: needed == nil ? .red : .white)
+                BigStat(value: String(format: "%.0f", live), label: "MPH",
+                        color: needed.map { live >= $0 ? .green : .red } ?? .red)
             }
         }
     }

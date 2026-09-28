@@ -207,4 +207,22 @@ struct SprintTimerTests {
         timer.add(fix(40, speed: 0.1, meters: 8))
         #expect(timer.lastMoving == t0.addingTimeInterval(2))
     }
+
+    @Test func ridingAverageIgnoresDueMinuteShift() {
+        var timer = armed()
+        timer.add(fix(100, speed: 5, meters: 0))
+        timer.add(fix(101, speed: 5, meters: 5)) // rolls at 100
+        timer.setStart(t0.addingTimeInterval(110)) // official start: due minute 10 s later
+        timer.add(fix(102, speed: 5, meters: 10))
+        // 10 m in 2 s of riding, not 10 m in "negative" official time.
+        #expect(abs(timer.ridingAverageSpeed(at: t0.addingTimeInterval(102)) - 5) < 0.01)
+    }
+
+    @Test func runAverageSpeedUsesRidingTime() {
+        // Timed from due (t0) but rolled 20 s late: 1000 m over 100 s of riding.
+        let run = SprintRun(test: 1, start: t0, end: t0.addingTimeInterval(120), distance: 1000,
+                            averageHeartRate: nil, maxHeartRate: nil, idealTime: nil,
+                            rolled: t0.addingTimeInterval(20))
+        #expect(run.averageSpeed == 10)
+    }
 }

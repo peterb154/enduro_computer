@@ -18,7 +18,9 @@ struct HeartRateDevicesView: View {
                                 Text(device.name).foregroundStyle(.primary)
                                 Spacer()
                                 if device.id == heartRate.connectedID {
-                                    Text(heartRate.bpm.map { "\($0) bpm" } ?? "connected")
+                                    Text([heartRate.bpm.map { "\($0) bpm" } ?? "connected",
+                                          heartRate.batteryPercent.map { "\($0)%" }]
+                                        .compactMap { $0 }.joined(separator: " · "))
                                         .foregroundStyle(.secondary)
                                 }
                             }

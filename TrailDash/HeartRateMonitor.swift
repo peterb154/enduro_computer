@@ -19,11 +19,15 @@ final class HeartRateMonitor: NSObject {
     private(set) var devices: [HeartRateDevice] = []
     /// The device currently delivering HR, if any.
     private(set) var connectedID: UUID?
+    /// Battery level of the connected device (standard Battery Service), if it reports one.
+    private(set) var batteryPercent: Int?
     /// Called for every HR sample, including repeats of the same value.
     var onSample: ((Int) -> Void)?
 
     private static let heartRateService = CBUUID(string: "180D")
     private static let measurement = CBUUID(string: "2A37")
+    private static let batteryService = CBUUID(string: "180F")
+    private static let batteryLevel = CBUUID(string: "2A19")
     private static let preferredKey = "preferredHeartRateDevice"
 
     private var central: CBCentralManager!
@@ -48,6 +52,7 @@ final class HeartRateMonitor: NSObject {
             central.cancelPeripheralConnection(current)
             bpm = nil
             connectedID = nil
+            batteryPercent = nil
         }
         connect(peripheral)
     }
@@ -102,7 +107,7 @@ extension HeartRateMonitor: CBCentralManagerDelegate {
         guard peripheral.identifier == current?.identifier else { return }
         connectedID = peripheral.identifier
         status = "Connected: \(name(of: peripheral))"
-        peripheral.discoverServices([Self.heartRateService])
+        peripheral.discoverServices([Self.heartRateService, Self.batteryService])
     }
 
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
@@ -123,20 +128,35 @@ extension HeartRateMonitor: CBCentralManagerDelegate {
 
 extension HeartRateMonitor: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        for service in peripheral.services ?? [] where service.uuid == Self.heartRateService {
-            peripheral.discoverCharacteristics([Self.measurement], for: service)
+        for service in peripheral.services ?? [] {
+            switch service.uuid {
+            case Self.heartRateService: peripheral.discoverCharacteristics([Self.measurement], for: service)
+            case Self.batteryService: peripheral.discoverCharacteristics([Self.batteryLevel], for: service)
+            default: break
+            }
         }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        for characteristic in service.characteristics ?? [] where characteristic.uuid == Self.measurement {
-            peripheral.setNotifyValue(true, for: characteristic)
+        for characteristic in service.characteristics ?? [] {
+            if characteristic.uuid == Self.measurement {
+                peripheral.setNotifyValue(true, for: characteristic)
+            } else if characteristic.uuid == Self.batteryLevel {
+                peripheral.readValue(for: characteristic)
+                if characteristic.properties.contains(.notify) {
+                    peripheral.setNotifyValue(true, for: characteristic)
+                }
+            }
         }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        guard peripheral.identifier == current?.identifier,
-              let data = characteristic.value, let sample = parseHeartRate(data) else { return }
+        guard peripheral.identifier == current?.identifier, let data = characteristic.value else { return }
+        if characteristic.uuid == Self.batteryLevel {
+            batteryPercent = data.first.map { min(100, Int($0)) }
+            return
+        }
+        guard let sample = parseHeartRate(data) else { return }
         bpm = sample
         onSample?(sample)
     }

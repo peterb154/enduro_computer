@@ -44,6 +44,8 @@ struct ContentView: View {
                 }
             }
             .padding()
+            // Pin to the top; each screen decides what fills the rest.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         // Screen never sleeps while the app is open, riding or not.
         .onAppear {

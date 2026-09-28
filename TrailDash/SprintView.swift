@@ -34,27 +34,33 @@ struct SprintView: View {
                     VStack(spacing: 10) { idleActions(listHeight: .infinity) }
                 }
             } else {
+                // Portrait: big HR takes the free space; actions sit at the bottom.
                 VStack(spacing: 10) {
+                    HeartRateNumber(bpm: heartRate.bpm)
                     idleStatus
-                    idleActions(listHeight: 200)
+                    idleActions(listHeight: 160)
                 }
             }
         }
     }
 
-    /// HR and clock, countdown to the next test, transfer, and which test is next.
+    /// Clock (with HR beside it in landscape), countdown to the next test, transfer,
+    /// and which test is next.
     private var idleStatus: some View {
         VStack(spacing: 10) {
             // One compact line: labels sit beside the numbers instead of under them.
             HStack(alignment: .firstTextBaseline) {
-                Text(heartRate.bpm.map(String.init) ?? "--")
-                    .font(.system(size: 40, weight: .heavy, design: .rounded))
-                Text("HR").font(.system(size: 16, weight: .bold)).foregroundStyle(.gray)
+                if isLandscape {
+                    Text(heartRate.bpm.map(String.init) ?? "--")
+                        .font(.system(size: 40, weight: .heavy, design: .rounded))
+                    Text("HR").font(.system(size: 16, weight: .bold)).foregroundStyle(.gray)
+                }
                 Spacer()
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     Text(Format.clock(context.date))
-                        .font(.system(size: 40, weight: .heavy, design: .rounded))
+                        .font(.system(size: isLandscape ? 40 : 56, weight: .heavy, design: .rounded))
                 }
+                if !isLandscape { Spacer() }
             }
             .monospacedDigit()
             .foregroundStyle(.white)

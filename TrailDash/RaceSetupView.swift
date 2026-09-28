@@ -169,7 +169,7 @@ struct RaceEditor: View {
     private func chartLine(_ label: String, miles: Binding<Double?>, seconds: Binding<Int?>,
                            timePlaceholder: String) -> some View {
         HStack(spacing: 8) {
-            Text(label).frame(width: 44, alignment: .leading)
+            Text(label).fixedSize()
             DecimalInput(value: miles, placeholder: "mile")
                 .frame(width: 64)
             Text("mi").foregroundStyle(.secondary)
@@ -199,32 +199,37 @@ struct RaceEditor: View {
     }
 }
 
-/// A roll chart time typed as digits on the number pad, with the parsed time shown beside it.
-/// A roll chart time typed as digits on the number pad, with the parsed time shown beside it.
+/// A roll chart time: shows "10:38:00", switches to digits ("103800") on the
+/// number pad while editing, and back when done. Red if it doesn't parse.
 private struct ChartTimeInput: View {
     @Binding var seconds: Int?
     let raceStartMinutes: Int
     let placeholder: String
     @State private var text = ""
+    @FocusState private var editing: Bool
 
     var body: some View {
-        HStack(spacing: 8) {
-            TextField(placeholder, text: $text)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-                .monospacedDigit()
-            Text(seconds.map(Format.clock) ?? (text.isEmpty ? "" : "?"))
-                .monospacedDigit()
-                .foregroundStyle(seconds == nil ? .red : .secondary)
-                .frame(minWidth: 72, alignment: .trailing)
-        }
-        .onAppear {
-            text = seconds.map { Format.clock(seconds: $0).filter(\.isNumber) } ?? ""
-        }
-        .onChange(of: text) { _, newText in
-            seconds = parseChartTime(newText, raceStartMinutes: raceStartMinutes)
-        }
+        TextField(placeholder, text: $text)
+            .focused($editing)
+            .keyboardType(.numberPad)
+            .multilineTextAlignment(.trailing)
+            .monospacedDigit()
+            .foregroundStyle(seconds == nil && !text.isEmpty ? .red : .primary)
+            .onAppear { text = display }
+            .onChange(of: editing) { _, isEditing in
+                if isEditing {
+                    text = text.filter(\.isNumber)
+                } else if seconds != nil {
+                    text = display
+                }
+            }
+            .onChange(of: text) { _, newText in
+                // Digits only are kept, so "10:38:00" and "103800" parse the same.
+                seconds = parseChartTime(newText, raceStartMinutes: raceStartMinutes)
+            }
     }
+
+    private var display: String { seconds.map(Format.clock) ?? "" }
 }
 
 /// Decimal entry that saves on every keystroke. A formatted TextField only saves

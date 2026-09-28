@@ -50,7 +50,7 @@ struct SprintView: View {
         VStack(spacing: 10) {
             // One compact line: labels sit beside the numbers instead of under them.
             HStack(alignment: .firstTextBaseline) {
-                if isLandscape {
+                if isLandscape && !sprint.runs.isEmpty {
                     Text(heartRate.bpm.map(String.init) ?? "--")
                         .font(.system(size: 40, weight: .heavy, design: .rounded))
                     Text("HR").font(.system(size: 16, weight: .bold)).foregroundStyle(.gray)
@@ -60,7 +60,8 @@ struct SprintView: View {
                     Text(Format.clock(context.date))
                         .font(.system(size: isLandscape ? 40 : 56, weight: .heavy, design: .rounded))
                 }
-                if !isLandscape { Spacer() }
+                // Centered unless HR sits beside it.
+                if !(isLandscape && !sprint.runs.isEmpty) { Spacer() }
             }
             .monospacedDigit()
             .foregroundStyle(.white)
@@ -90,7 +91,8 @@ struct SprintView: View {
             RunList(runs: sprint.runs, total: sprint.totalTime, totalDropped: sprint.totalDropped,
                     maxHeight: listHeight)
         } else if isLandscape {
-            Spacer(minLength: 0)
+            // No results yet: big HR fills the right side instead of empty space.
+            HeartRateNumber(bpm: heartRate.bpm)
         }
         Button { sprint.arm() } label: {
             // Pressed at the start line, not mid-ride, so it can be shorter than STOP.

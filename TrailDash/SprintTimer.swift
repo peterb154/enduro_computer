@@ -54,11 +54,16 @@ nonisolated enum SpeedTrend: Equatable {
 }
 
 /// Is the last minute faster or slower than the test average? Answers
-/// "I just turned up the heat; is it helping?"
-nonisolated func speedTrend(recent: Double?, average: Double, band: Double = RideSettings.standard.sprintTrendBand) -> SpeedTrend {
+/// "I just turned up the heat; is it helping?" Hysteresis: a trend needs `band`
+/// to switch on but only drops once back within `exitBand`, so it doesn't flicker.
+nonisolated func speedTrend(recent: Double?, average: Double, previous: SpeedTrend = .flat,
+                            settings: RideSettings = .standard) -> SpeedTrend {
     guard let recent else { return .flat }
-    if recent > average + band { return .up }
-    if recent < average - band { return .down }
+    let difference = recent - average
+    let upThreshold = previous == .up ? settings.sprintTrendExitBand : settings.sprintTrendBand
+    let downThreshold = previous == .down ? settings.sprintTrendExitBand : settings.sprintTrendBand
+    if difference > upThreshold { return .up }
+    if difference < -downThreshold { return .down }
     return .flat
 }
 
@@ -88,6 +93,8 @@ nonisolated struct SprintTimer {
     private(set) var stats: TripStats
     /// Fixes since the bike started rolling, while armed.
     private var launch: [Fix] = []
+    /// Speed trend for the running screen, updated once per fix.
+    private(set) var trend = SpeedTrend.flat
     /// When the bike started rolling. The run's official start may differ (due minute).
     private(set) var rolledAt: Date?
     /// Time of the last fix at moving speed while running.
@@ -125,6 +132,8 @@ nonisolated struct SprintTimer {
             history.append((fix.time, stats.distance))
             let keep = settings.sprintTrendWindow * 1.5
             history.removeAll { fix.time.timeIntervalSince($0.time) > keep }
+            trend = speedTrend(recent: recentSpeed(), average: ridingAverageSpeed(at: fix.time),
+                               previous: trend, settings: settings)
         case .armed:
             watchForLaunch(fix)
         }
@@ -191,6 +200,7 @@ nonisolated struct SprintTimer {
         history = []
         lastMoving = lastFix.time
         rolledAt = start
+        trend = .flat
         state = .running(start: start)
     }
 }

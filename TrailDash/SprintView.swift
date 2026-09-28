@@ -161,7 +161,7 @@ struct SprintView: View {
             // Speed uses riding time (from rolling), not the official clock, which may
             // start at the due minute and would skew the average early in the test.
             let average = sprint.timer.ridingAverageSpeed(at: context.date)
-            let trend = speedTrend(recent: sprint.timer.recentSpeed(), average: average)
+            let trend = sprint.timer.trend
             let size: CGFloat = isLandscape ? 76 : 64
             let toGo = sprint.chartLengthMiles.map { length in
                 BigStat(value: String(format: "%.1f", milesToGo(lengthMiles: length, distanceMeters: distance)),
@@ -188,7 +188,9 @@ struct SprintView: View {
                 }
             }
         }
-        // The whole screen is the stop button: no aiming with gloves.
+        // The whole screen is the stop button: no aiming with gloves. Fill all the
+        // space first, or only the drawn numbers would respond, not the black around them.
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
         .onLongPressGesture(minimumDuration: 0.5) {
             sprint.stop(at: stopPressedAt ?? .now)

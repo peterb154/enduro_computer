@@ -170,8 +170,17 @@ struct SprintTimerTests {
     @Test func speedTrendAgainstTestAverage() {
         #expect(speedTrend(recent: 9, average: 8) == .up)
         #expect(speedTrend(recent: 7, average: 8) == .down)
-        #expect(speedTrend(recent: 8.1, average: 8) == .flat)
+        #expect(speedTrend(recent: 8.3, average: 8) == .flat) // inside the 1 mph band
         #expect(speedTrend(recent: nil, average: 8) == .flat)
+    }
+
+    @Test func speedTrendHysteresisPreventsFlicker() {
+        // 0.3 m/s over: not enough to turn on...
+        #expect(speedTrend(recent: 8.3, average: 8, previous: .flat) == .flat)
+        // ...but enough to stay on once already up.
+        #expect(speedTrend(recent: 8.3, average: 8, previous: .up) == .up)
+        #expect(speedTrend(recent: 8.05, average: 8, previous: .up) == .flat)
+        #expect(speedTrend(recent: 7.7, average: 8, previous: .down) == .down)
     }
 
     @Test func recentSpeedUsesLastMinuteOnly() {

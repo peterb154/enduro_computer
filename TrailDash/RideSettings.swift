@@ -25,8 +25,10 @@ nonisolated struct RideSettings {
     var sprintStoppedGrace: TimeInterval = 3
     /// Window for "is pushing harder helping": recent speed vs the test average.
     var sprintTrendWindow: TimeInterval = 60
-    /// Recent speed must differ from the test average by this much to show a trend.
-    var sprintTrendBand: Double = 0.22 // m/s, ~0.5 mph
+    /// Recent speed must beat (or trail) the test average by this much to show a trend...
+    var sprintTrendBand: Double = 0.45 // m/s, ~1 mph
+    /// ...and a trend stays on until it's back within this much, so it doesn't flicker.
+    var sprintTrendExitBand: Double = 0.11 // m/s, ~0.25 mph
     /// Pace for scoring tests that have no roll chart times entered.
     var sprintFallbackPaceMph: Double = 24
 

@@ -122,9 +122,11 @@ struct RaceEditor: View {
 
             Section {
                 ForEach($race.resets) { $reset in
-                    HStack {
-                        NumberField(label: "At", value: $reset.atMile, placeholder: "mile")
-                        NumberField(label: "Reset to", value: $reset.toMile, placeholder: "mile")
+                    HStack(spacing: 8) {
+                        Text("At")
+                        DecimalInput(value: $reset.atMile, placeholder: "mile")
+                        Image(systemName: "arrow.right").foregroundStyle(.secondary)
+                        DecimalInput(value: $reset.toMile, placeholder: "mile")
                     }
                 }
                 Button("Add reset") { race.resets.append(ChartReset()) }
@@ -153,17 +155,25 @@ struct RaceEditor: View {
 
     private func testSection(number: Int, test: Binding<ChartTest>) -> some View {
         Section {
-            // Same order as a chart line: mile, then time.
-            NumberField(label: "Start mile", value: test.startMile, placeholder: "mile")
-            ChartTimeField(label: "Start time", seconds: test.startTime, raceStartMinutes: race.raceStartMinutes)
-            NumberField(label: "End mile", value: test.endMile, placeholder: "mile")
-            ChartTimeField(label: "End time", seconds: test.endTime, raceStartMinutes: race.raceStartMinutes,
-                           placeholder: "optional")
+            // One line each, in chart order: mile, then time.
+            chartLine("Start", miles: test.startMile, seconds: test.startTime, timePlaceholder: "hhmmss")
+            chartLine("End", miles: test.endMile, seconds: test.endTime, timePlaceholder: "optional")
         } header: {
             Text("Test \(number)")
         } footer: {
             Text(summary(number: number, test: test.wrappedValue))
                 .monospacedDigit()
+        }
+    }
+
+    private func chartLine(_ label: String, miles: Binding<Double?>, seconds: Binding<Int?>,
+                           timePlaceholder: String) -> some View {
+        HStack(spacing: 8) {
+            Text(label).frame(width: 44, alignment: .leading)
+            DecimalInput(value: miles, placeholder: "mile")
+                .frame(width: 64)
+            Text("mi").foregroundStyle(.secondary)
+            ChartTimeInput(seconds: seconds, raceStartMinutes: race.raceStartMinutes, placeholder: timePlaceholder)
         }
     }
 
@@ -190,16 +200,15 @@ struct RaceEditor: View {
 }
 
 /// A roll chart time typed as digits on the number pad, with the parsed time shown beside it.
-private struct ChartTimeField: View {
-    let label: String
+/// A roll chart time typed as digits on the number pad, with the parsed time shown beside it.
+private struct ChartTimeInput: View {
     @Binding var seconds: Int?
     let raceStartMinutes: Int
-    var placeholder = "hhmmss"
+    let placeholder: String
     @State private var text = ""
 
     var body: some View {
-        HStack {
-            Text(label)
+        HStack(spacing: 8) {
             TextField(placeholder, text: $text)
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing)
@@ -207,7 +216,7 @@ private struct ChartTimeField: View {
             Text(seconds.map(Format.clock) ?? (text.isEmpty ? "" : "?"))
                 .monospacedDigit()
                 .foregroundStyle(seconds == nil ? .red : .secondary)
-                .frame(minWidth: 80, alignment: .trailing)
+                .frame(minWidth: 72, alignment: .trailing)
         }
         .onAppear {
             text = seconds.map { Format.clock(seconds: $0).filter(\.isNumber) } ?? ""
@@ -220,25 +229,34 @@ private struct ChartTimeField: View {
 
 /// Decimal entry that saves on every keystroke. A formatted TextField only saves
 /// on Return or focus loss, and the decimal pad has no Return key, so edits were lost.
-private struct NumberField: View {
-    let label: String
+private struct DecimalInput: View {
     @Binding var value: Double?
     let placeholder: String
     @State private var text = ""
 
     var body: some View {
+        TextField(placeholder, text: $text)
+            .keyboardType(.decimalPad)
+            .multilineTextAlignment(.trailing)
+            .monospacedDigit()
+            .onAppear {
+                text = value.map { $0.formatted(.number.precision(.fractionLength(0...2)).grouping(.never)) } ?? ""
+            }
+            .onChange(of: text) { _, newText in
+                value = parseDecimal(newText)
+            }
+    }
+}
+
+private struct NumberField: View {
+    let label: String
+    @Binding var value: Double?
+    let placeholder: String
+
+    var body: some View {
         HStack {
             Text(label)
-            TextField(placeholder, text: $text)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .monospacedDigit()
-        }
-        .onAppear {
-            text = value.map { $0.formatted(.number.precision(.fractionLength(0...2)).grouping(.never)) } ?? ""
-        }
-        .onChange(of: text) { _, newText in
-            value = parseDecimal(newText)
+            DecimalInput(value: $value, placeholder: placeholder)
         }
     }
 }

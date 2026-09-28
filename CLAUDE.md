@@ -111,7 +111,7 @@ Several timed tests (8+ is common), ridden once each **in order**, separated by 
 2. **Phase 2 — Race infrastructure:** big on-screen action buttons (BLE bar button only if those fail on the bike), big-number race display, replay test harness.
 3. **Phase 3 — Hare scramble mode.**
 4. **Phase 4 — Sprint enduro mode.**
-5. Later / maybe: session history & comparison views, external high-rate GPS receiver support, a companion web app (self-hosted on the owner's Proxmox server) for viewing ride logs.
+5. Later / maybe: session history & comparison views, external high-rate GPS receiver support, a companion web app (self-hosted on the owner's Proxmox server) for viewing ride logs, including importing moto-tally per-test results to compare each test against the class leader / fastest rider alongside the rider's own HR and speed. Also possible: forgotten-stop handling (backstop auto-stop at chart distance + 1 mi, stamped at the out check; a "Fix end" action on results).
 
 Don't start a later phase until the earlier one works on the bike.
 

@@ -28,6 +28,24 @@ struct SprintView: View {
     // MARK: Idle: next test, results so far, arm
 
     private var idle: some View {
+        Group {
+            if isLandscape {
+                // Two columns so nothing runs off the bottom: status left, actions right.
+                HStack(alignment: .top, spacing: 20) {
+                    VStack(spacing: 10) { idleStatus; Spacer(minLength: 0) }
+                    VStack(spacing: 10) { idleActions(listHeight: .infinity) }
+                }
+            } else {
+                VStack(spacing: 10) {
+                    idleStatus
+                    idleActions(listHeight: 200)
+                }
+            }
+        }
+    }
+
+    /// HR and clock, countdown to the next test, transfer, and which test is next.
+    private var idleStatus: some View {
         VStack(spacing: 10) {
             // One compact line: labels sit beside the numbers instead of under them.
             HStack(alignment: .firstTextBaseline) {
@@ -58,37 +76,45 @@ struct SprintView: View {
                     .frame(maxWidth: .infinity)
                 stepButton("plus") { sprint.changeNextTest(by: 1) }
             }
-            if !sprint.runs.isEmpty {
-                RunList(runs: sprint.runs, total: sprint.totalTime, totalDropped: sprint.totalDropped)
-            }
-            Button { sprint.arm() } label: {
-                // Pressed at the start line, not mid-ride, so it can be shorter than STOP.
-                BigButtonLabel(title: "ARM TEST \(sprint.nextTest)", color: .yellow, height: 80)
+        }
+    }
+
+    /// Results so far, ARM, and session/race buttons.
+    @ViewBuilder
+    private func idleActions(listHeight: CGFloat) -> some View {
+        if !sprint.runs.isEmpty {
+            RunList(runs: sprint.runs, total: sprint.totalTime, totalDropped: sprint.totalDropped,
+                    maxHeight: listHeight)
+        } else if isLandscape {
+            Spacer(minLength: 0)
+        }
+        Button { sprint.arm() } label: {
+            // Pressed at the start line, not mid-ride, so it can be shorter than STOP.
+            BigButtonLabel(title: "ARM TEST \(sprint.nextTest)", color: .yellow, height: isLandscape ? 64 : 80)
+        }
+        .buttonStyle(.plain)
+
+        HStack(spacing: 12) {
+            Button { showingSetup = true } label: {
+                Label(sprint.hasSelectedRace ? sprint.race.name : "Races", systemImage: "clock")
+                    .lineLimit(1)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
-
-            HStack(spacing: 12) {
-                Button { showingSetup = true } label: {
-                    Label(sprint.hasSelectedRace ? sprint.race.name : "Races", systemImage: "clock")
-                        .lineLimit(1)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
-                }
-                .buttonStyle(.plain)
-                if sprint.isSessionOpen {
-                    Text("Hold to end session")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
-                        .onLongPressGesture(minimumDuration: 1) { sprint.endSession() }
-                }
+            if sprint.isSessionOpen {
+                Text("Hold to end session")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
+                    .onLongPressGesture(minimumDuration: 1) { sprint.endSession() }
             }
-            if !sprint.isSessionOpen, let log = sprint.finishedLog {
-                ShareButton(log: log)
-            }
+        }
+        if !sprint.isSessionOpen, let log = sprint.finishedLog {
+            ShareButton(log: log)
         }
     }
 
@@ -208,6 +234,7 @@ struct RunList: View {
     let runs: [SprintRun]
     let total: TimeInterval
     let totalDropped: TimeInterval
+    var maxHeight: CGFloat = 200
 
     var body: some View {
         ScrollView {
@@ -235,7 +262,7 @@ struct RunList: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxHeight: 200)
+        .frame(maxHeight: maxHeight)
     }
 }
 

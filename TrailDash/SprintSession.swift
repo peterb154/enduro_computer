@@ -154,6 +154,11 @@ final class SprintSession {
         }
     }
 
+    func mark(_ name: String) {
+        guard isSessionOpen else { return }
+        log?.append(.mark(name, at: .now))
+    }
+
     func add(heartRate: Int) {
         guard isSessionOpen else { return }
         log?.append(.heartRate(heartRate, at: .now))

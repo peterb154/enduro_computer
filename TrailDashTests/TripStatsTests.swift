@@ -61,6 +61,13 @@ struct TripStatsTests {
         #expect(stats.maxHeartRate == 180)
     }
 
+    @Test func heartRateIgnoresNoContactZeros() {
+        var stats = TripStats()
+        for hr in [0, 120, 0, 0, 180, 0] { stats.add(heartRate: hr) }
+        #expect(stats.averageHeartRate == 150)
+        #expect(stats.maxHeartRate == 180)
+    }
+
     @Test func movingAverageSpeedIgnoresStops() {
         var stats = TripStats()
         stats.add(fix(meters: 0, seconds: 0))

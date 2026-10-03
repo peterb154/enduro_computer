@@ -22,7 +22,10 @@ final class HeartRateMonitor: NSObject {
     /// Battery level of the connected device (standard Battery Service), if it reports one.
     private(set) var batteryPercent: Int?
     /// Called for every HR sample, including repeats of the same value.
+    /// 0 bpm is passed through so the raw log keeps it; it means no skin contact.
     var onSample: ((Int) -> Void)?
+    /// Connection changes ("hr connected" / "hr disconnected"), for the raw log.
+    var onEvent: ((String) -> Void)?
 
     private static let heartRateService = CBUUID(string: "180D")
     private static let measurement = CBUUID(string: "2A37")
@@ -107,6 +110,7 @@ extension HeartRateMonitor: CBCentralManagerDelegate {
         guard peripheral.identifier == current?.identifier else { return }
         connectedID = peripheral.identifier
         status = "Connected: \(name(of: peripheral))"
+        onEvent?("hr connected")
         peripheral.discoverServices([Self.heartRateService, Self.batteryService])
     }
 
@@ -121,6 +125,7 @@ extension HeartRateMonitor: CBCentralManagerDelegate {
         bpm = nil
         connectedID = nil
         status = "Reconnecting to \(name(of: peripheral))…"
+        onEvent?("hr disconnected")
         // A pending connect never times out, so this reconnects whenever the device comes back.
         central.connect(peripheral)
     }
@@ -157,7 +162,7 @@ extension HeartRateMonitor: CBPeripheralDelegate {
             return
         }
         guard let sample = parseHeartRate(data) else { return }
-        bpm = sample
+        bpm = sample > 0 ? sample : nil
         onSample?(sample)
     }
 }

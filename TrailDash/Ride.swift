@@ -44,11 +44,16 @@ final class Ride {
         location.setBackgroundUpdates(false)
     }
 
+    func mark(_ name: String) {
+        guard isActive else { return }
+        log?.append(.mark(name, at: .now))
+    }
+
     func add(heartRate: Int) {
         guard isActive else { return }
         stats.add(heartRate: heartRate)
         log?.append(.heartRate(heartRate, at: .now))
-        lastHeartRate = heartRate
+        lastHeartRate = heartRate > 0 ? heartRate : nil
         liveActivity.update(bpm: heartRate, distance: stats.distance)
     }
 

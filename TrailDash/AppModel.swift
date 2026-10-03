@@ -29,6 +29,10 @@ final class AppModel {
             ride.add(heartRate: bpm)
             sprint.add(heartRate: bpm)
         }
+        heartRate.onEvent = { [ride, sprint] name in
+            ride.mark(name)
+            sprint.mark(name)
+        }
     }
 
     /// Mode can't be switched mid-ride or mid-session.

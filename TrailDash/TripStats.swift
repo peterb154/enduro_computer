@@ -62,6 +62,7 @@ nonisolated struct TripStats {
     }
 
     mutating func add(heartRate: Int) {
+        guard heartRate > 0 else { return } // 0 = strap has no skin contact
         heartRateSum += heartRate
         heartRateCount += 1
         maxHeartRate = max(maxHeartRate ?? heartRate, heartRate)

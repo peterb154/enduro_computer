@@ -66,7 +66,7 @@ struct SprintView: View {
             .monospacedDigit()
             .foregroundStyle(.white)
             if let due = sprint.nextTestDue() {
-                DueCountdown(test: sprint.nextTest, due: due)
+                DueCountdown(test: sprint.nextTest, due: due, lengthMiles: sprint.chartLengthMiles)
                 if let miles = sprint.transferMilesToGo {
                     TransferPanel(miles: miles, due: due, location: location)
                 }
@@ -111,9 +111,12 @@ struct SprintView: View {
     }
 
     private var nextTestTitle: String {
-        var parts = ["TEST \(sprint.nextTest)"]
-        if let length = sprint.chartLengthMiles { parts.append(String(format: "%.1f MI", length)) }
-        if let pace = sprint.chartPaceMph { parts.append("\(Format.mph(pace / 2.236936)) MPH") }
+        // Short so it fits beside the −/+ buttons. Length sits on the due line when there is one.
+        var parts = ["T\(sprint.nextTest)"]
+        if sprint.nextTestDue() == nil, let length = sprint.chartLengthMiles {
+            parts.append(String(format: "%.1f MI", length))
+        }
+        if let pace = sprint.chartPaceMph { parts.append(String(format: "%.0fM", pace)) }
         return parts.joined(separator: " · ")
     }
 

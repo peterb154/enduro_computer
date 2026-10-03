@@ -111,8 +111,10 @@ struct SprintView: View {
     }
 
     private var nextTestTitle: String {
-        guard let pace = sprint.chartPaceMph else { return "TEST \(sprint.nextTest)" }
-        return "TEST \(sprint.nextTest) · \(Format.mph(pace / 2.236936)) MPH"
+        var parts = ["TEST \(sprint.nextTest)"]
+        if let length = sprint.chartLengthMiles { parts.append(String(format: "%.1f MI", length)) }
+        if let pace = sprint.chartPaceMph { parts.append("\(Format.mph(pace / 2.236936)) MPH") }
+        return parts.joined(separator: " · ")
     }
 
     private func stepButton(_ systemImage: String, action: @escaping () -> Void) -> some View {

@@ -310,7 +310,6 @@ private struct NumberField: View {
 struct DueCountdown: View {
     let test: Int
     let due: Date
-    var lengthMiles: Double?
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -333,8 +332,7 @@ struct DueCountdown: View {
     }
 
     private var label: String {
-        let length = lengthMiles.map { String(format: " · %.1f MI", $0) } ?? ""
-        return "T\(test)\(length) · DUE \(Format.clock(due))"
+        "T\(test) · DUE \(Format.clock(due))"
     }
 
     private func color(for phase: CountdownPhase) -> Color {

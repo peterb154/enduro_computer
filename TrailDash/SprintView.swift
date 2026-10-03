@@ -66,7 +66,7 @@ struct SprintView: View {
             .monospacedDigit()
             .foregroundStyle(.white)
             if let due = sprint.nextTestDue() {
-                DueCountdown(test: sprint.nextTest, due: due, lengthMiles: sprint.chartLengthMiles)
+                DueCountdown(test: sprint.nextTest, due: due)
                 if let miles = sprint.transferMilesToGo {
                     TransferPanel(miles: miles, due: due, location: location)
                 }
@@ -111,13 +111,10 @@ struct SprintView: View {
     }
 
     private var nextTestTitle: String {
-        // Short so it fits beside the −/+ buttons. Length sits on the due line when there is one.
-        var parts = ["T\(sprint.nextTest)"]
-        if sprint.nextTestDue() == nil, let length = sprint.chartLengthMiles {
-            parts.append(String(format: "%.1f MI", length))
-        }
-        if let pace = sprint.chartPaceMph { parts.append(String(format: "%.0fM", pace)) }
-        return parts.joined(separator: " · ")
+        // Short so it fits beside the −/+ buttons: "T1 · 1M", "T3 · 4.2M".
+        guard let length = sprint.chartLengthMiles else { return "T\(sprint.nextTest)" }
+        let miles = length == length.rounded() ? String(format: "%.0f", length) : String(format: "%.1f", length)
+        return "T\(sprint.nextTest) · \(miles)M"
     }
 
     private func stepButton(_ systemImage: String, action: @escaping () -> Void) -> some View {

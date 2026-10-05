@@ -41,6 +41,9 @@ final class SprintSession {
     private(set) var transferStats = TripStats()
     private(set) var runs: [SprintRun] = []
     private(set) var log: RideLog?
+    /// When the last test was stopped, and the transfer odometer before it, for resume.
+    private var stoppedAt: Date?
+    private var transferBeforeStop = TripStats()
     private let location: LocationTracker
 
     init(location: LocationTracker) {
@@ -118,8 +121,26 @@ final class SprintSession {
         )
         runs.append(run)
         nextTest += 1
+        stoppedAt = .now
+        transferBeforeStop = transferStats
         transferStats = TripStats() // at the out-check: odometer = this test's end mile
         log?.append(.mark("stop \(run.label)", at: run.end))
+    }
+
+    /// An accidental stop (water or mud on the screen) can be undone for a while.
+    func canResume(at now: Date = .now) -> Bool {
+        guard timer.resumableStart != nil, let stoppedAt, !runs.isEmpty else { return false }
+        return now.timeIntervalSince(stoppedAt) < RideSettings.standard.sprintResumeWindow
+    }
+
+    /// Undo the last stop: drop its result and keep timing it as if never stopped.
+    func resume() {
+        guard canResume(), let run = runs.last, timer.resume() else { return }
+        runs.removeLast()
+        nextTest = run.test
+        transferStats = transferBeforeStop
+        stoppedAt = nil
+        log?.append(.mark("resume \(run.label)", at: .now))
     }
 
     func endSession() {

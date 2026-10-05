@@ -95,6 +95,36 @@ struct SprintTimerTests {
         #expect(second == nil)
     }
 
+    @Test func resumeUndoesAStopAndCountsTheGap() {
+        var timer = armed()
+        timer.add(fix(0, speed: 3, meters: 0))
+        timer.add(fix(1, speed: 3, meters: 3))
+        timer.add(fix(2, speed: 3, meters: 6))
+        _ = timer.stop()
+        // Water on the screen stopped it; the rider kept riding.
+        timer.add(fix(3, speed: 3, meters: 9))
+        timer.add(fix(4, speed: 3, meters: 12))
+        let resumed = timer.resume()
+        #expect(resumed)
+        #expect(timer.state == .running(start: t0))
+        timer.add(fix(5, speed: 3, meters: 15))
+        #expect(abs(timer.stats.distance - 15) < 0.1)
+        #expect(timer.lastMoving == t0.addingTimeInterval(5))
+    }
+
+    @Test func armingTheNextTestEndsResume() {
+        var timer = armed()
+        timer.add(fix(0, speed: 3, meters: 0))
+        timer.add(fix(1, speed: 3, meters: 3))
+        timer.add(fix(2, speed: 3, meters: 6))
+        _ = timer.stop()
+        timer.arm()
+        timer.disarm()
+        let resumed = timer.resume()
+        #expect(!resumed)
+        #expect(timer.state == .idle)
+    }
+
     @Test func disarmReturnsToIdle() {
         var timer = armed()
         timer.disarm()

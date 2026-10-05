@@ -90,3 +90,50 @@ struct BigButtonLabel: View {
             .contentShape(Rectangle())
     }
 }
+
+/// Drag the handle all the way across to confirm. A gloved thumb can; water or
+/// mud on the screen, which can fake a tap or a hold, can't drag it that far.
+/// `action` gets when the slide began, so the slide itself doesn't add time.
+struct SlideToConfirm: View {
+    let title: String
+    let color: Color
+    var height: CGFloat = 96
+    let action: (Date) -> Void
+    @State private var offset: CGFloat = 0
+    @State private var began: Date?
+
+    var body: some View {
+        GeometryReader { geometry in
+            let travel = max(0, geometry.size.width - height)
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 20).fill(color.opacity(0.3))
+                Text(title)
+                    .font(.system(size: 30, weight: .heavy))
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.leading, height)
+                RoundedRectangle(cornerRadius: 20).fill(color)
+                    .frame(width: height, height: height)
+                    .overlay {
+                        Image(systemName: "chevron.right.2")
+                            .font(.system(size: 36, weight: .heavy))
+                            .foregroundStyle(.black)
+                    }
+                    .offset(x: offset)
+                    .gesture(DragGesture(minimumDistance: 0)
+                        .onChanged { drag in
+                            if began == nil { began = .now }
+                            offset = min(max(0, drag.translation.width), travel)
+                        }
+                        .onEnded { _ in
+                            if travel > 0, offset >= travel * 0.95 { action(began ?? .now) }
+                            began = nil
+                            withAnimation(.spring(duration: 0.3)) { offset = 0 }
+                        })
+            }
+        }
+        .frame(height: height)
+    }
+}

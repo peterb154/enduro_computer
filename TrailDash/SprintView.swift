@@ -4,8 +4,6 @@ struct SprintView: View {
     let sprint: SprintSession
     let heartRate: HeartRateMonitor
     let location: LocationTracker
-    /// When the rider's thumb first hit STOP; the run ends here, not when the hold completes.
-    @State private var stopPressedAt: Date?
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
@@ -94,6 +92,13 @@ struct SprintView: View {
             // No results yet: big HR fills the right side instead of empty space.
             HeartRateNumber(bpm: heartRate.bpm)
         }
+        // Undo for a stop that wasn't meant (water or mud on the screen).
+        TimelineView(.periodic(from: .now, by: 5)) { context in
+            if sprint.canResume(at: context.date), let run = sprint.runs.last {
+                SlideToConfirm(title: "SLIDE TO RESUME T\(run.test)", color: .orange,
+                               height: isLandscape ? 64 : 80) { _ in sprint.resume() }
+            }
+        }
         if sprint.isSessionOpen {
             Button { sprint.arm() } label: {
                 // Pressed at the start line, not mid-ride, so it can be shorter than STOP.
@@ -141,8 +146,7 @@ struct SprintView: View {
             Text("Test \(sprint.nextTest) · starts when you go")
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.gray)
-            BigButtonLabel(title: "HOLD TO DISARM", color: .gray)
-                .onLongPressGesture(minimumDuration: 1) { sprint.disarm() }
+            SlideToConfirm(title: "SLIDE TO DISARM", color: .gray) { _ in sprint.disarm() }
         }
         return Group {
             if isLandscape {
@@ -159,7 +163,7 @@ struct SprintView: View {
         }
     }
 
-    // MARK: Running: HR, miles to go, time, speed trend. Hold anywhere to stop.
+    // MARK: Running: HR, miles to go, time, speed trend. Slide to stop.
 
     private var isLandscape: Bool { verticalSizeClass == .compact }
 
@@ -179,9 +183,10 @@ struct SprintView: View {
             let time = BigStat(value: Format.runTime(elapsed), label: "TIME", size: size)
             let speed = BigStat(value: "\(Format.mph(average)) \(arrow(trend))", label: "AVG MPH",
                                 color: color(trend), size: size)
-            let hint = Text("HOLD ANYWHERE TO STOP")
-                .font(.system(size: 20, weight: .heavy))
-                .foregroundStyle(.red)
+            // The run ends when the slide began, not when it finished.
+            let hint = SlideToConfirm(title: "SLIDE TO STOP", color: .red, height: isLandscape ? 80 : 96) { began in
+                sprint.stop(at: began)
+            }
 
             if isLandscape {
                 HStack(spacing: 24) {
@@ -196,16 +201,6 @@ struct SprintView: View {
                     hint
                 }
             }
-        }
-        // The whole screen is the stop button: no aiming with gloves. Fill all the
-        // space first, or only the drawn numbers would respond, not the black around them.
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
-        .onLongPressGesture(minimumDuration: 0.5) {
-            sprint.stop(at: stopPressedAt ?? .now)
-            stopPressedAt = nil
-        } onPressingChanged: { pressing in
-            stopPressedAt = pressing ? .now : stopPressedAt
         }
     }
 

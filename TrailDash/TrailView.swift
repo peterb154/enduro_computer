@@ -83,9 +83,8 @@ struct TrailView: View {
     @ViewBuilder
     private var startStopButton: some View {
         if ride.isActive {
-            // Hold to stop, so a gloved bump mid-ride can't end the session.
-            BigButtonLabel(title: "HOLD TO STOP", color: .red, height: isLandscape ? 72 : 100)
-                .onLongPressGesture(minimumDuration: 1) { ride.stop() }
+            // A slide, so a gloved bump or water on the screen can't end the ride.
+            SlideToConfirm(title: "SLIDE TO STOP", color: .red, height: isLandscape ? 72 : 96) { _ in ride.stop() }
         } else {
             Button { ride.start() } label: { BigButtonLabel(title: "START", color: .green, height: isLandscape ? 72 : 100) }
                 .buttonStyle(.plain)

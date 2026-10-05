@@ -31,6 +31,8 @@ nonisolated struct RideSettings {
     var sprintTrendExitBand: Double = 0.11 // m/s, ~0.25 mph
     /// Pace for scoring tests that have no roll chart times entered.
     var sprintFallbackPaceMph: Double = 24
+    /// A stopped test can be resumed (accidental stop) for this long, until the next arm.
+    var sprintResumeWindow: TimeInterval = 600
 
     // Heart rate sources
     /// A source with no reading for this long is stale; the backup takes over.

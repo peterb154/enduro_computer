@@ -101,6 +101,9 @@ nonisolated struct SprintTimer {
     private(set) var lastMoving: Date?
     /// Recent (fix time, run distance) samples while running, for the speed trend.
     private var history: [(time: Date, distance: Double)] = []
+    /// Start of the last stopped run while it can still be resumed (until the next
+    /// arm), for undoing an accidental stop. Stats keep accumulating meanwhile.
+    private(set) var resumableStart: Date?
 
     init(settings: RideSettings = .standard) {
         self.settings = settings
@@ -115,32 +118,47 @@ nonisolated struct SprintTimer {
     mutating func arm() {
         state = .armed
         launch = []
+        resumableStart = nil
     }
 
     mutating func disarm() {
         state = .idle
         launch = []
+        resumableStart = nil
+    }
+
+    /// Undo the last stop: the run continues from its original start, with every
+    /// fix since the stop counted. Returns false if there's nothing to resume.
+    mutating func resume() -> Bool {
+        guard state == .idle, let start = resumableStart else { return false }
+        state = .running(start: start)
+        resumableStart = nil
+        return true
     }
 
     mutating func add(_ fix: Fix) {
         switch state {
         case .idle:
-            return
+            if resumableStart != nil { track(fix) }
         case .running:
-            stats.add(fix)
-            if fix.speed >= settings.minMovingSpeed { lastMoving = fix.time }
-            history.append((fix.time, stats.distance))
-            let keep = settings.sprintTrendWindow * 1.5
-            history.removeAll { fix.time.timeIntervalSince($0.time) > keep }
-            trend = speedTrend(recent: recentSpeed(), average: ridingAverageSpeed(at: fix.time),
-                               previous: trend, settings: settings)
+            track(fix)
         case .armed:
             watchForLaunch(fix)
         }
     }
 
+    private mutating func track(_ fix: Fix) {
+        stats.add(fix)
+        if fix.speed >= settings.minMovingSpeed { lastMoving = fix.time }
+        history.append((fix.time, stats.distance))
+        let keep = settings.sprintTrendWindow * 1.5
+        history.removeAll { fix.time.timeIntervalSince($0.time) > keep }
+        trend = speedTrend(recent: recentSpeed(), average: ridingAverageSpeed(at: fix.time),
+                           previous: trend, settings: settings)
+    }
+
     mutating func add(heartRate: Int) {
-        guard isRunning else { return }
+        guard isRunning || resumableStart != nil else { return }
         stats.add(heartRate: heartRate)
     }
 
@@ -171,6 +189,7 @@ nonisolated struct SprintTimer {
     mutating func stop() -> (start: Date, stats: TripStats)? {
         guard case .running(let start) = state else { return nil }
         state = .idle
+        resumableStart = start
         return (start, stats)
     }
 

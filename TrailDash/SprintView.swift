@@ -94,19 +94,18 @@ struct SprintView: View {
             // No results yet: big HR fills the right side instead of empty space.
             HeartRateNumber(bpm: heartRate.bpm)
         }
-        Button { sprint.arm() } label: {
-            // Pressed at the start line, not mid-ride, so it can be shorter than STOP.
-            BigButtonLabel(title: "ARM TEST \(sprint.nextTest)", color: .yellow, height: isLandscape ? 64 : 80)
-        }
-        .buttonStyle(.plain)
-
         if sprint.isSessionOpen {
-            Text("Hold to end session")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: 50)
-                .background(Color.gray.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
-                .onLongPressGesture(minimumDuration: 1) { sprint.endSession() }
+            Button { sprint.arm() } label: {
+                // Pressed at the start line, not mid-ride, so it can be shorter than STOP.
+                BigButtonLabel(title: "ARM TEST \(sprint.nextTest)", color: .yellow, height: isLandscape ? 64 : 80)
+            }
+            .buttonStyle(.plain)
+        } else {
+            // Recording runs from here until the race is ended in Settings.
+            Button { sprint.startSession() } label: {
+                BigButtonLabel(title: "START RACE", color: .green, height: isLandscape ? 64 : 80)
+            }
+            .buttonStyle(.plain)
         }
     }
 

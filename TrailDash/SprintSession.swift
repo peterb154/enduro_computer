@@ -1,8 +1,9 @@
 import Foundation
 
-/// A sprint enduro session: tests ridden once each, in order (Test 1, 2, 3, ...),
+/// A sprint enduro race: tests ridden once each, in order (Test 1, 2, 3, ...),
 /// with one raw log covering the whole day, transfer and pit time included.
-/// The session opens on the first arm and closes when the rider ends it.
+/// The race (session) opens when the rider starts it and only closes when they
+/// explicitly end it in Settings, so the day's track is always recorded.
 @Observable
 final class SprintSession {
     /// The test that the next arm will time. Advances after each run.
@@ -40,8 +41,6 @@ final class SprintSession {
     private(set) var transferStats = TripStats()
     private(set) var runs: [SprintRun] = []
     private(set) var log: RideLog?
-    /// The last closed session's log, for sharing.
-    private(set) var finishedLog: RideLog?
     private let location: LocationTracker
 
     init(location: LocationTracker) {
@@ -79,14 +78,19 @@ final class SprintSession {
         nextTest = max(1, nextTest + delta)
     }
 
+    /// Opens the race: starts the raw log and background GPS.
+    func startSession() {
+        guard log == nil else { return }
+        // Test number and race selection are the rider's pre-race setup; keep them.
+        runs = []
+        transferStats = TripStats()
+        log = RideLog(startedAt: .now)
+        log?.append(.mark("start race \(race.name)", at: .now))
+        location.setBackgroundUpdates(true)
+    }
+
     func arm() {
-        if log == nil {
-            // Test number and race selection are the rider's pre-race setup; keep them.
-            runs = []
-            finishedLog = nil
-            log = RideLog(startedAt: .now)
-            location.setBackgroundUpdates(true)
-        }
+        guard isSessionOpen else { return }
         timer.arm()
         log?.append(.mark("arm Test \(nextTest)", at: .now))
     }
@@ -119,20 +123,19 @@ final class SprintSession {
     }
 
     func endSession() {
-        log?.append(.mark("end session", at: .now))
+        timer.disarm()
+        log?.append(.mark("end race", at: .now))
         log?.finish()
-        finishedLog = log
         log = nil
         location.setBackgroundUpdates(false)
         // Results stay on screen until the next arm; saved races are kept.
         nextTest = 1
     }
 
-    /// Start over: close any open session (its log is still written and shareable),
-    /// clear results, and go back to Test 1. Saved races are kept.
+    /// Clear results and go back to Test 1. An open race keeps recording.
     func reset() {
         timer.disarm()
-        if isSessionOpen { endSession() }
+        log?.append(.mark("reset results", at: .now))
         runs = []
         nextTest = 1
         transferStats = TripStats()

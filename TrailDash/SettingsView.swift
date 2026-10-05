@@ -9,8 +9,9 @@ struct SettingsView: View {
     let location: LocationTracker
     @AppStorage("orientationLock") private var orientation = OrientationLock.auto
     @Environment(\.dismiss) private var dismiss
-    @State private var path: [UUID] = []
+    @State private var path = NavigationPath()
     @State private var confirmingReset = false
+    @State private var confirmingEnd = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -58,40 +59,66 @@ struct SettingsView: View {
 
     private var logsSection: some View {
         Section {
-            if ride.endedAt != nil, let log = ride.log {
-                shareLink("Last trail ride", log: log)
+            let logs = RideLog.allLogs()
+            ForEach(logs.prefix(20), id: \.self) { url in
+                NavigationLink {
+                    LogShareView(logURL: url)
+                } label: {
+                    HStack {
+                        Text(logTitle(url))
+                        Spacer()
+                        if url == recordingURL {
+                            Text("Recording").foregroundStyle(.red)
+                        }
+                    }
+                }
             }
-            if let log = sprint.finishedLog {
-                shareLink("Last sprint session", log: log)
-            }
-            if ride.endedAt == nil && sprint.finishedLog == nil {
-                Text("Finish a ride or end a sprint session to share it here.")
-                    .foregroundStyle(.secondary)
+            if logs.isEmpty {
+                Text("No rides or races yet.").foregroundStyle(.secondary)
             }
         } header: {
             Text("Logs")
         } footer: {
-            Text("Shares the GPX and raw log. Every ride is also in the Files app under On My iPhone > TrailDash.")
+            Text("Newest first, including one still recording. Every log is also in the Files app under On My iPhone > TrailDash.")
         }
     }
 
-    private func shareLink(_ title: String, log: RideLog) -> some View {
-        ShareLink(items: [log.gpxURL, log.logURL]) {
-            Label(title, systemImage: "square.and.arrow.up")
+    /// The log of the ride or race in progress, if any.
+    private var recordingURL: URL? {
+        if ride.isActive { return ride.log?.logURL }
+        return sprint.log?.logURL
+    }
+
+    /// "2026-10-04_102104.jsonl" -> "Oct 4, 10:21"
+    private func logTitle(_ url: URL) -> String {
+        let parser = DateFormatter()
+        parser.dateFormat = "yyyy-MM-dd_HHmmss"
+        guard let date = parser.date(from: url.deletingPathExtension().lastPathComponent) else {
+            return url.lastPathComponent
         }
+        return date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
     }
 
     private var sessionSection: some View {
         Section {
-            Button("Reset session", role: .destructive) { confirmingReset = true }
+            if sprint.isSessionOpen {
+                Button("End race", role: .destructive) { confirmingEnd = true }
+                    .confirmationDialog("End the race and stop recording?",
+                                        isPresented: $confirmingEnd, titleVisibility: .visible) {
+                        Button("End race", role: .destructive) { sprint.endSession() }
+                    }
+            }
+            Button("Reset results", role: .destructive) { confirmingReset = true }
                 .confirmationDialog("Clear \(sprint.runs.count) result(s) and go back to Test 1?",
                                     isPresented: $confirmingReset, titleVisibility: .visible) {
                     Button("Reset", role: .destructive) { sprint.reset() }
                 }
         } header: {
-            Text("Session")
+            Text("Sprint race")
         } footer: {
-            Text("Ends the current session (its log is still saved and shareable), clears results, and starts again at Test 1. Saved races are kept.")
+            Text(sprint.isSessionOpen
+                 ? "The race records GPS and HR until you end it here. Reset clears results and goes back to Test 1; recording continues."
+                 : "Reset clears results and goes back to Test 1. Saved races are kept.")
         }
     }
 
@@ -341,6 +368,33 @@ struct DueCountdown: View {
         case .oneMinute: .yellow
         case .tenSeconds: .orange
         case .late: .red
+        }
+    }
+}
+
+/// Builds the GPX from a raw log (so far, if still recording) and offers both to share.
+private struct LogShareView: View {
+    let logURL: URL
+    @State private var gpxURL: URL?
+
+    var body: some View {
+        List {
+            if let gpxURL {
+                ShareLink(items: [gpxURL, logURL]) {
+                    Label("Share GPX and raw log", systemImage: "square.and.arrow.up")
+                }
+            } else {
+                ProgressView()
+            }
+            ShareLink(item: logURL) {
+                Label("Share raw log only", systemImage: "doc")
+            }
+        }
+        .navigationTitle(logURL.deletingPathExtension().lastPathComponent)
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            let url = logURL
+            gpxURL = await Task.detached { RideLog.writeGPX(for: url) }.value
         }
     }
 }

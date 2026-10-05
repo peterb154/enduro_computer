@@ -39,6 +39,8 @@ nonisolated struct RideSettings {
     var hrStaleAfter: TimeInterval = 5
     /// A "connected" source silent this long gets disconnected and reconnected.
     var hrReconnectAfter: TimeInterval = 10
+    /// GPX points only carry an HR reading at most this old.
+    var gpxMaxHeartRateAge: TimeInterval = 10
 
     static let standard = RideSettings()
 }

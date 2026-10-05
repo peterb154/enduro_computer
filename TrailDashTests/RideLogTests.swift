@@ -33,4 +33,15 @@ struct RideLogTests {
         #expect(gpx.contains(#"lat="44.1" lon="-115.2""#))
         #expect(gpx.contains("<time>1970-01-01T00:16:40Z</time>"))
     }
+
+    @Test func gpxDropsStaleAndZeroHeartRate() {
+        var later = fix
+        later.time = fix.time.addingTimeInterval(11)
+        // Strap went silent: an 11 s old reading isn't attached.
+        let stale = makeGPX([.heartRate(150, at: fix.time), .fix(later)], name: "test")
+        #expect(!stale.contains("<gpxtpx:hr>"))
+        // No skin contact: 0 bpm is never written.
+        let zero = makeGPX([.heartRate(0, at: fix.time), .fix(fix)], name: "test")
+        #expect(!zero.contains("<gpxtpx:hr>"))
+    }
 }

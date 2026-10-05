@@ -15,11 +15,13 @@ final class AppModel {
     }
     let heartRate = HeartRateMonitor()
     let location = LocationTracker()
+    let overlay: HeartRateOverlay
     let ride: Ride
     let sprint: SprintSession
 
     init() {
-        ride = Ride(location: location)
+        overlay = HeartRateOverlay(heartRate: heartRate)
+        ride = Ride(location: location, overlay: overlay)
         sprint = SprintSession(location: location)
         location.onFix = { [ride, sprint] fix in
             ride.add(fix)

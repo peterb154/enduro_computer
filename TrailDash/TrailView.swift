@@ -28,6 +28,7 @@ struct TrailView: View {
     private var details: some View {
         if ride.isActive {
             liveStats
+            overlayRow
         } else if ride.endedAt != nil {
             summary
         }
@@ -79,6 +80,23 @@ struct TrailView: View {
     }
 
     private var isLandscape: Bool { verticalSizeClass == .compact }
+
+    /// HR floats over onX when you leave the app; the button floats it right away.
+    private var overlayRow: some View {
+        HStack(spacing: 12) {
+            HeartRateOverlayPreview(overlay: ride.overlay)
+                .frame(width: 108, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Button { ride.overlay.start() } label: {
+                Text(ride.overlay.isFloating ? "HR FLOATING" : "FLOAT HR")
+                    .font(.system(size: 24, weight: .heavy))
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity, minHeight: 60)
+                    .background(Color.blue, in: RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
+        }
+    }
 
     @ViewBuilder
     private var startStopButton: some View {

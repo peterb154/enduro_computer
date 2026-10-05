@@ -27,7 +27,8 @@ targets:
         UIUserInterfaceStyle: Dark
         NSBluetoothAlwaysUsageDescription: Connects to your heart rate strap or watch.
         NSLocationWhenInUseUsageDescription: Records your ride track, distance, and speed.
-        UIBackgroundModes: [bluetooth-central, location]
+        # audio: required for the Picture-in-Picture HR overlay (nothing plays sound)
+        UIBackgroundModes: [bluetooth-central, location, audio]
         # Ride files show up in the Files app under On My iPhone > TrailDash
         UIFileSharingEnabled: true
         NSSupportsLiveActivities: true

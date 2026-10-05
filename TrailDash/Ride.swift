@@ -10,11 +10,14 @@ final class Ride {
     private var lastHeartRate: Int?
     private let liveActivity = RideLiveActivity()
     private let location: LocationTracker
+    /// Floats HR over onX while riding.
+    let overlay: HeartRateOverlay
 
     var isActive: Bool { startedAt != nil && endedAt == nil }
 
-    init(location: LocationTracker) {
+    init(location: LocationTracker, overlay: HeartRateOverlay) {
         self.location = location
+        self.overlay = overlay
     }
 
     func add(_ fix: Fix) {
@@ -33,6 +36,7 @@ final class Ride {
         log?.append(.mark("start", at: now))
         liveActivity.start(at: now)
         location.setBackgroundUpdates(true)
+        overlay.enable()
     }
 
     func stop() {
@@ -42,6 +46,7 @@ final class Ride {
         log?.finish()
         liveActivity.end()
         location.setBackgroundUpdates(false)
+        overlay.disable()
     }
 
     func mark(_ name: String) {

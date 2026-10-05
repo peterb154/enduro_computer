@@ -53,8 +53,8 @@ final class Ride {
         guard isActive else { return }
         stats.add(heartRate: heartRate)
         log?.append(.heartRate(heartRate, at: .now, source: source))
-        lastHeartRate = heartRate > 0 ? heartRate : nil
-        liveActivity.update(bpm: heartRate, distance: stats.distance)
+        lastHeartRate = heartRate > 0 ? heartRate : nil // 0 = no skin contact: show "--"
+        liveActivity.update(bpm: lastHeartRate, distance: stats.distance)
     }
 
     /// Distance over total elapsed time, stops included (m/s).

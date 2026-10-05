@@ -14,8 +14,8 @@ struct SprintView: View {
                 idle
             case .armed:
                 armed
-            case .running(let start):
-                running(since: start)
+            case .running:
+                running
             }
         }
         .sensoryFeedback(.impact(weight: .heavy), trigger: sprint.timer.state)
@@ -172,47 +172,63 @@ struct SprintView: View {
         }
     }
 
-    // MARK: Running: HR, miles to go, time, speed trend. Slide to stop.
+    // MARK: Running: HR and miles to go, big enough to read in a glance. Slide to stop.
 
     private var isLandscape: Bool { verticalSizeClass == .compact }
 
-    private func running(since start: Date) -> some View {
-        TimelineView(.periodic(from: .now, by: 0.1)) { context in
-            let elapsed = context.date.timeIntervalSince(start)
+    /// Looking down mid-test is dangerous, so only two numbers are big: HR (zone
+    /// colored) and miles to go. Avg speed is a small row whose color carries the
+    /// trend. Elapsed time is in the results, not here.
+    private var running: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
             let distance = sprint.timer.stats.distance
             // Speed uses riding time (from rolling), not the official clock, which may
             // start at the due minute and would skew the average early in the test.
             let average = sprint.timer.ridingAverageSpeed(at: context.date)
             let trend = sprint.timer.trend
-            let size: CGFloat = isLandscape ? 76 : 64
             let toGo = sprint.chartLengthMiles.map { length in
                 // Yellow past zero: the chart was short; keep counting how far over.
                 let left = milesToGo(lengthMiles: length, distanceMeters: distance)
-                return BigStat(value: String(format: "%.1f", left), label: "TO GO",
-                               color: left < 0 ? .yellow : .white, size: size)
-            } ?? BigStat(value: Format.miles(distance), label: "MI", size: size)
-            let time = BigStat(value: Format.runTime(elapsed), label: "TIME", size: size)
+                return milesStat(String(format: "%.1f", left), label: "MI TO GO", color: left < 0 ? .yellow : .white)
+            } ?? milesStat(Format.miles(distance), label: "MI", color: .white)
             let speed = BigStat(value: "\(Format.mph(average)) \(arrow(trend))", label: "AVG MPH",
-                                color: color(trend), size: size)
+                                color: color(trend), size: 40)
             // The run ends when the slide began, not when it finished.
-            let hint = SlideToConfirm(title: "SLIDE TO STOP", color: .red, height: isLandscape ? 80 : 96) { began in
+            let slider = SlideToConfirm(title: "SLIDE TO STOP", color: .red, height: isLandscape ? 72 : 88) { began in
                 sprint.stop(at: began)
             }
 
             if isLandscape {
                 HStack(spacing: 24) {
                     HeartRateNumber(bpm: heartRate.bpm)
-                    VStack(spacing: 8) { toGo; time; speed; hint }
+                    VStack(spacing: 8) { toGo; speed; slider }
                 }
             } else {
-                VStack(spacing: 16) {
+                VStack(spacing: 8) {
                     HeartRateNumber(bpm: heartRate.bpm)
-                    HStack { toGo; time }
+                        .layoutPriority(1)
+                    toGo
                     speed
-                    hint
+                    slider
                 }
             }
         }
+    }
+
+    /// Second biggest number on the running screen.
+    private func milesStat(_ value: String, label: String, color: Color) -> some View {
+        VStack(spacing: 0) {
+            Text(value)
+                .font(.system(size: isLandscape ? 150 : 130, weight: .heavy, design: .rounded))
+                .monospacedDigit()
+                .minimumScaleFactor(0.4)
+                .lineLimit(1)
+                .foregroundStyle(color)
+            Text(label)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.gray)
+        }
+        .frame(maxWidth: .infinity, maxHeight: isLandscape ? .infinity : nil)
     }
 
     private func arrow(_ trend: SpeedTrend) -> String {
@@ -346,7 +362,8 @@ struct TransferRow: View {
                     BigStat(value: String(format: "%.0f", live), label: "MPH",
                             color: needed.map { live >= $0 ? .green : .red } ?? .white, size: 44)
                 }
-                BigStat(value: heartRate.bpm.map(String.init) ?? "--", label: "HR", size: 44)
+                BigStat(value: heartRate.bpm.map(String.init) ?? "--", label: "HR",
+                        color: HeartRateZones.color(bpm: heartRate.bpm), size: 44)
             }
         }
     }

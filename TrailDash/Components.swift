@@ -37,7 +37,7 @@ struct StatusLine: View {
     }
 }
 
-/// The biggest thing on screen. Fills whatever vertical space is left.
+/// The biggest thing on screen, colored by HR zone. Fills whatever vertical space is left.
 struct HeartRateNumber: View {
     let bpm: Int?
 
@@ -47,7 +47,7 @@ struct HeartRateNumber: View {
             .monospacedDigit()
             .minimumScaleFactor(0.3)
             .lineLimit(1)
-            .foregroundStyle(.white)
+            .foregroundStyle(HeartRateZones.color(bpm: bpm))
             .frame(maxHeight: .infinity)
     }
 }

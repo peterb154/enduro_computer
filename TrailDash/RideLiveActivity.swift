@@ -18,7 +18,8 @@ final class RideLiveActivity {
     }
 
     func update(bpm: Int?, distance: Double) {
-        let state = RideActivityAttributes.ContentState(bpm: bpm, miles: Format.miles(distance))
+        let state = RideActivityAttributes.ContentState(bpm: bpm, zone: bpm.map { HeartRateZones.zone($0) },
+                                                        miles: Format.miles(distance))
         guard let activity, state != lastState else { return }
         lastState = state
         let id = activity.id

@@ -44,6 +44,7 @@ private struct LockScreenView: View {
                 Text(bpmText(context.state))
                     .font(.system(size: 64, weight: .heavy, design: .rounded))
                     .monospacedDigit()
+                    .foregroundStyle(HeartRateZones.color(zone: context.state.zone ?? 1))
                 Text("HR").font(.headline).foregroundStyle(.gray)
             }
             Spacer()

@@ -41,6 +41,7 @@ struct SettingsView: View {
                     .pickerStyle(.segmented)
                 }
                 HeartRateDeviceSection(heartRate: heartRate)
+                HeartRateZonesSection()
                 logsSection
                 sessionSection
                 practiceSection
@@ -400,6 +401,36 @@ private struct LogShareView: View {
         .task {
             let url = logURL
             gpxURL = await Task.detached { RideLog.writeGPX(for: url) }.value
+        }
+    }
+}
+
+/// Where each HR zone starts, for the zone colors on the riding screens.
+private struct HeartRateZonesSection: View {
+    @AppStorage(HeartRateZones.floorKey(zone: 2)) private var zone2 = HeartRateZones.defaultFloors[0]
+    @AppStorage(HeartRateZones.floorKey(zone: 3)) private var zone3 = HeartRateZones.defaultFloors[1]
+    @AppStorage(HeartRateZones.floorKey(zone: 4)) private var zone4 = HeartRateZones.defaultFloors[2]
+    @AppStorage(HeartRateZones.floorKey(zone: 5)) private var zone5 = HeartRateZones.defaultFloors[3]
+
+    var body: some View {
+        Section {
+            floor("Zone 2", zone: 2, value: $zone2)
+            floor("Zone 3", zone: 3, value: $zone3)
+            floor("Zone 4", zone: 4, value: $zone4)
+            floor("Zone 5", zone: 5, value: $zone5)
+        } header: {
+            Text("Heart rate zones")
+        } footer: {
+            Text("HR shows in the zone's color: white below Zone 2, then blue, orange, red, purple. Defaults are from your Garmin.")
+        }
+    }
+
+    private func floor(_ name: String, zone: Int, value: Binding<Int>) -> some View {
+        Stepper(value: value, in: 60...220) {
+            HStack {
+                Circle().fill(HeartRateZones.color(zone: zone)).frame(width: 14, height: 14)
+                Text("\(name) from \(value.wrappedValue) bpm").monospacedDigit()
+            }
         }
     }
 }

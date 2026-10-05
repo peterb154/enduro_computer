@@ -6,6 +6,8 @@ import Foundation
 nonisolated struct RideActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         var bpm: Int?
+        /// HR zone (1-5) for the color; worked out in the app, where Settings live.
+        var zone: Int?
         var miles: String
     }
 

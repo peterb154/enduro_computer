@@ -117,9 +117,23 @@ struct RaceScheduleTests {
         #expect(parseDecimal("4.4.5") == nil)
     }
 
-    @Test func milesToGoCountsDownAndStopsAtZero() {
+    @Test func milesToGoCountsDownPastZero() {
         #expect(abs(milesToGo(lengthMiles: 7.0, distanceMeters: 1609.344 * 2.5) - 4.5) < 1e-9)
-        #expect(milesToGo(lengthMiles: 7.0, distanceMeters: 1609.344 * 7.3) == 0)
+        // Past the chart length (wrong chart): keeps counting, negative.
+        #expect(abs(milesToGo(lengthMiles: 7.0, distanceMeters: 1609.344 * 7.3) + 0.3) < 1e-9)
+    }
+
+    @Test func repeatedCourseUsesEarlierLapDistance() {
+        // Bartlett: two laps of four tests; the chart said Test 4 was 3 mi, GPS said 11.
+        var race = RaceSchedule(tests: (0..<8).map { _ in ChartTest(startMile: 10, endMile: 13) })
+        let t0 = Date(timeIntervalSince1970: 0)
+        let test4 = SprintRun(test: 4, start: t0, end: t0.addingTimeInterval(3000),
+                              distance: 1609.344 * 11, averageHeartRate: nil, maxHeartRate: nil, idealTime: nil)
+        #expect(race.lengthMiles(for: 8, ridden: [test4]) == 3) // no repeat set: chart
+        race.repeatsAfterTest = 4
+        #expect(abs((race.lengthMiles(for: 8, ridden: [test4]) ?? 0) - 11) < 1e-9)
+        #expect(race.lengthMiles(for: 7, ridden: [test4]) == 3) // Test 3 not ridden: chart
+        #expect(race.lengthMiles(for: 4, ridden: [test4]) == 3) // lap 1 always uses the chart
     }
 
     /// 2026 Bartlett resets (Test 5-7 "At" values as corrected by the rider).

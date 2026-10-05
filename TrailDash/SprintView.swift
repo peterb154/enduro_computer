@@ -177,8 +177,10 @@ struct SprintView: View {
             let trend = sprint.timer.trend
             let size: CGFloat = isLandscape ? 76 : 64
             let toGo = sprint.chartLengthMiles.map { length in
-                BigStat(value: String(format: "%.1f", milesToGo(lengthMiles: length, distanceMeters: distance)),
-                        label: "TO GO", size: size)
+                // Yellow past zero: the chart was short; keep counting how far over.
+                let left = milesToGo(lengthMiles: length, distanceMeters: distance)
+                return BigStat(value: String(format: "%.1f", left), label: "TO GO",
+                               color: left < 0 ? .yellow : .white, size: size)
             } ?? BigStat(value: Format.miles(distance), label: "MI", size: size)
             let time = BigStat(value: Format.runTime(elapsed), label: "TIME", size: size)
             let speed = BigStat(value: "\(Format.mph(average)) \(arrow(trend))", label: "AVG MPH",
@@ -271,7 +273,8 @@ struct TransferPanel: View {
             let needed = requiredMph(miles: miles, secondsLeft: due.timeIntervalSince(context.date))
             let live = max(0, location.lastFix?.speed ?? 0) * 2.236936
             HStack {
-                BigStat(value: String(format: "%.1f", miles), label: "MI TO START")
+                BigStat(value: String(format: "%.1f", miles), label: "MI TO START",
+                        color: miles < 0 ? .yellow : .white)
                 BigStat(value: needed.map { String(format: "%.0f", $0) } ?? "LATE",
                         label: "NEED MPH", color: needed == nil ? .red : .white)
                 BigStat(value: String(format: "%.0f", live), label: "MPH",

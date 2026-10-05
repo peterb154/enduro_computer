@@ -175,10 +175,15 @@ struct RaceEditor: View {
                     .environment(\.locale, Locale(identifier: "en_GB"))
                 LabeledContent("Offset", value: "\(race.keyOffsetSeconds / 60) min")
                 NumberField(label: "Chart speed (mph)", value: $race.chartSpeedMph, placeholder: "mph")
+                Stepper(value: Binding(get: { race.repeatsAfterTest ?? 0 },
+                                       set: { race.repeatsAfterTest = $0 > 0 ? $0 : nil }),
+                        in: 0...20) {
+                    Text(race.repeatsAfterTest.map { "Course repeats after Test \($0)" } ?? "Course doesn't repeat")
+                }
             } header: {
                 Text("Roll chart")
             } footer: {
-                Text("Race start is the time the roll chart is based on; your due times are the chart times plus your offset. Chart speed (\"Start Speed\") works out test end times the chart doesn't print.")
+                Text("Race start is the time the roll chart is based on; your due times are the chart times plus your offset. Chart speed (\"Start Speed\") works out test end times the chart doesn't print. For a multi-lap race, set where the course repeats: later laps use your GPS distance from the earlier lap for miles to go, in case the chart is wrong.")
             }
 
             // Identified by id, not index, so removing a test can't leave a field bound past the end.

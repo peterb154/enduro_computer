@@ -57,7 +57,7 @@ nonisolated func riddenMiles(from start: Double, to end: Double, resets: [ChartR
 /// Speed needed to cover `miles` in `secondsLeft`, or nil when already out of time.
 nonisolated func requiredMph(miles: Double, secondsLeft: TimeInterval) -> Double? {
     guard secondsLeft > 0 else { return nil }
-    return miles / (secondsLeft / 3600)
+    return max(0, miles) / (secondsLeft / 3600) // past a short chart distance: unknown, say 0
 }
 
 /// One saved race: key time and roll chart. The rider's due times are the
@@ -73,6 +73,9 @@ nonisolated struct RaceSchedule: Codable, Equatable, Identifiable {
     var tests: [ChartTest] = []
     /// Reset lines from the chart, for transfer distances.
     var resets: [ChartReset] = []
+    /// Multi-lap races ride the same course again: with 4, Test 5 is Test 1's
+    /// course, Test 6 is Test 2's, and so on. nil when the course doesn't repeat.
+    var repeatsAfterTest: Int?
 
     init(id: UUID = UUID(), name: String = "New race", raceStartMinutes: Int = 10 * 60,
          keyTimeMinutes: Int = 10 * 60, chartSpeedMph: Double? = nil, tests: [ChartTest] = [],
@@ -96,6 +99,7 @@ nonisolated struct RaceSchedule: Codable, Equatable, Identifiable {
         chartSpeedMph = try c.decodeIfPresent(Double.self, forKey: .chartSpeedMph)
         tests = try c.decodeIfPresent([ChartTest].self, forKey: .tests) ?? []
         resets = try c.decodeIfPresent([ChartReset].self, forKey: .resets) ?? []
+        repeatsAfterTest = try c.decodeIfPresent(Int.self, forKey: .repeatsAfterTest)
     }
 
     var keyOffsetSeconds: Int { (keyTimeMinutes - raceStartMinutes) * 60 }
@@ -107,6 +111,16 @@ nonisolated struct RaceSchedule: Codable, Equatable, Identifiable {
 
     func test(_ number: Int) -> ChartTest? {
         tests.indices.contains(number - 1) ? tests[number - 1] : nil
+    }
+
+    /// Best guess at a test's length: the GPS distance from the last time its course
+    /// was ridden (an earlier lap), else the chart length. Charts can be badly wrong.
+    func lengthMiles(for number: Int, ridden runs: [SprintRun]) -> Double? {
+        if let laps = repeatsAfterTest, laps > 0, number > laps,
+           let earlier = runs.last(where: { $0.test == number - laps }), earlier.distance > 0 {
+            return earlier.distance / 1609.344
+        }
+        return test(number)?.lengthMiles
     }
 
     /// Chart time for the test; time dropped is measured against this. Uses the
@@ -169,10 +183,12 @@ nonisolated func parseChartTime(_ text: String, raceStartMinutes: Int) -> Int? {
     return seconds
 }
 
-/// Miles left in a test: chart length minus GPS distance so far, never below zero.
+/// Miles left in a test: chart length minus GPS distance so far. Goes negative
+/// past the chart length, because charts can be wrong (Bartlett showed 3 mi for
+/// an 11 mi test) and a count past zero still tells the rider how far over it is.
 /// GPS reads a little short in the woods, so this may not quite reach zero at the finish.
 nonisolated func milesToGo(lengthMiles: Double, distanceMeters: Double) -> Double {
-    max(0, lengthMiles - distanceMeters / 1609.344)
+    lengthMiles - distanceMeters / 1609.344
 }
 
 /// Parses a decimal typed on the decimal pad, accepting "." or "," as the separator.

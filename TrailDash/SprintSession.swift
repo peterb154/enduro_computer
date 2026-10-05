@@ -58,11 +58,13 @@ final class SprintSession {
     /// Miles left to the next test's start, counted from the last test's end mile.
     var transferMilesToGo: Double? {
         guard let last = runs.last, let total = race.transferMiles(afterTest: last.test, to: nextTest) else { return nil }
-        return max(0, total - transferStats.distance / 1609.344)
+        // Negative past the chart distance: the chart can be wrong.
+        return total - transferStats.distance / 1609.344
     }
 
-    /// Chart length of the next (or running) test, if its miles are entered.
-    var chartLengthMiles: Double? { race.test(nextTest)?.lengthMiles }
+    /// Length of the next (or running) test: an earlier lap's GPS distance on a
+    /// repeating course, else the chart's, if its miles are entered.
+    var chartLengthMiles: Double? { race.lengthMiles(for: nextTest, ridden: runs) }
 
     /// Pace for live time-dropped while running: the chart's, else the fallback.
     var livePaceMph: Double { chartPaceMph ?? RideSettings.standard.sprintFallbackPaceMph }

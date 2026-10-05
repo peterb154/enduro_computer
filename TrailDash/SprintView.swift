@@ -21,70 +21,74 @@ struct SprintView: View {
         .sensoryFeedback(.impact(weight: .heavy), trigger: sprint.timer.state)
     }
 
-    // MARK: Idle: next test, results so far, arm
+    // MARK: Idle: transfer to the next test, or results so far; arm
 
     private var idle: some View {
         Group {
-            if isLandscape {
+            if let due = sprint.nextTestDue() {
+                transfer(due: due)
+            } else if isLandscape {
                 // Two columns so nothing runs off the bottom: status left, actions right.
                 HStack(alignment: .top, spacing: 20) {
-                    VStack(spacing: 10) { idleStatus; Spacer(minLength: 0) }
-                    VStack(spacing: 10) { idleActions(listHeight: .infinity) }
+                    VStack(spacing: 10) { clock; testStepper; Spacer(minLength: 0) }
+                    VStack(spacing: 10) { results(listHeight: .infinity); raceButtons }
                 }
             } else {
                 // Portrait: big HR takes the free space; actions sit at the bottom.
                 VStack(spacing: 10) {
                     HeartRateNumber(bpm: heartRate.bpm)
-                    idleStatus
-                    idleActions(listHeight: 160)
+                    clock
+                    testStepper
+                    results(listHeight: 160)
+                    raceButtons
                 }
             }
         }
     }
 
-    /// Clock (with HR beside it in landscape), countdown to the next test, transfer,
-    /// and which test is next.
-    private var idleStatus: some View {
-        VStack(spacing: 10) {
-            // One compact line: labels sit beside the numbers instead of under them.
-            HStack(alignment: .firstTextBaseline) {
-                if isLandscape && !sprint.runs.isEmpty {
-                    Text(heartRate.bpm.map(String.init) ?? "--")
-                        .font(.system(size: 40, weight: .heavy, design: .rounded))
-                    Text("HR").font(.system(size: 16, weight: .bold)).foregroundStyle(.gray)
+    /// Between tests (or before the first): time until due and miles to the start
+    /// are all that matter, so they get the screen. Results wait until the end.
+    private func transfer(due: Date) -> some View {
+        let miles = sprint.transferMilesToGo
+        let board = TransferBoard(test: sprint.nextTest, due: due, miles: miles)
+        let row = TransferRow(due: due, miles: miles, heartRate: heartRate, location: location)
+        return Group {
+            if isLandscape {
+                HStack(spacing: 20) {
+                    board
+                    VStack(spacing: 10) { row; Spacer(minLength: 0); testStepper; raceButtons }
                 }
-                Spacer()
-                TimelineView(.periodic(from: .now, by: 1)) { context in
-                    Text(Format.clock(context.date))
-                        .font(.system(size: isLandscape ? 40 : 56, weight: .heavy, design: .rounded))
-                }
-                // Centered unless HR sits beside it.
-                if !(isLandscape && !sprint.runs.isEmpty) { Spacer() }
-            }
-            .monospacedDigit()
-            .foregroundStyle(.white)
-            if let due = sprint.nextTestDue() {
-                DueCountdown(test: sprint.nextTest, due: due)
-                if let miles = sprint.transferMilesToGo {
-                    TransferPanel(miles: miles, due: due, location: location)
-                }
-            }
-            HStack(spacing: 12) {
-                stepButton("minus") { sprint.changeNextTest(by: -1) }
-                Text(nextTestTitle)
-                    .font(.system(size: 28, weight: .heavy))
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                stepButton("plus") { sprint.changeNextTest(by: 1) }
+            } else {
+                VStack(spacing: 10) { board; row; testStepper; raceButtons }
             }
         }
     }
 
-    /// Results so far, ARM, and session/race buttons.
+    private var clock: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            Text(Format.clock(context.date))
+                .font(.system(size: isLandscape ? 40 : 56, weight: .heavy, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.white)
+        }
+    }
+
+    /// Which test is next, with -/+ to fix the count if one was skipped.
+    private var testStepper: some View {
+        HStack(spacing: 12) {
+            stepButton("minus") { sprint.changeNextTest(by: -1) }
+            Text(nextTestTitle)
+                .font(.system(size: 28, weight: .heavy))
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+            stepButton("plus") { sprint.changeNextTest(by: 1) }
+        }
+    }
+
     @ViewBuilder
-    private func idleActions(listHeight: CGFloat) -> some View {
+    private func results(listHeight: CGFloat) -> some View {
         if !sprint.runs.isEmpty {
             RunList(runs: sprint.runs, total: sprint.totalTime, totalDropped: sprint.totalDropped,
                     maxHeight: listHeight)
@@ -92,6 +96,11 @@ struct SprintView: View {
             // No results yet: big HR fills the right side instead of empty space.
             HeartRateNumber(bpm: heartRate.bpm)
         }
+    }
+
+    /// Resume (after an accidental stop), then ARM, or START RACE before the race is open.
+    @ViewBuilder
+    private var raceButtons: some View {
         // Undo for a stop that wasn't meant (water or mud on the screen).
         TimelineView(.periodic(from: .now, by: 5)) { context in
             if sprint.canResume(at: context.date), let run = sprint.runs.last {
@@ -260,25 +269,84 @@ struct RunList: View {
     }
 }
 
-/// Between tests: miles to the next start, the speed needed to make it on time,
-/// and live speed (green when at or above what's needed). Low need: ease off and
-/// let HR come down. High: haul.
-struct TransferPanel: View {
-    let miles: Double
+/// Between tests, the two numbers that matter, as big as they'll go: time until
+/// the rider is due at the next test, and miles to its start. Red when late.
+/// Buzzes on entering the last minute, the last 10 s, and going late.
+struct TransferBoard: View {
+    let test: Int
     let due: Date
+    /// Nil before the first test, or when the chart miles aren't entered.
+    let miles: Double?
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let remaining = due.timeIntervalSince(context.date)
+            let phase = countdownPhase(remaining: remaining)
+            let late = phase == .late
+            VStack(spacing: 4) {
+                huge(late ? Format.signedMinutes(-remaining) : Format.duration(remaining.rounded(.up)),
+                     label: "\(late ? "LATE · " : "")T\(test) DUE \(Format.clock(due))",
+                     color: color(for: phase))
+                if let miles {
+                    // Yellow past zero: the chart distance was short.
+                    huge(String(format: "%.1f", miles), label: "MI TO T\(test)",
+                         color: miles < 0 ? .yellow : .white)
+                }
+            }
+            .padding(.vertical, 8)
+            .background(late ? Color.red.opacity(0.35) : .clear, in: RoundedRectangle(cornerRadius: 20))
+            .sensoryFeedback(.warning, trigger: phase) { _, new in new != .waiting }
+        }
+    }
+
+    private func huge(_ value: String, label: String, color: Color) -> some View {
+        VStack(spacing: 0) {
+            Text(value)
+                .font(.system(size: 160, weight: .heavy, design: .rounded))
+                .monospacedDigit()
+                .minimumScaleFactor(0.3)
+                .lineLimit(1)
+                .foregroundStyle(color)
+                .frame(maxHeight: .infinity)
+            Text(label)
+                .font(.system(size: 20, weight: .bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .foregroundStyle(.gray)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func color(for phase: CountdownPhase) -> Color {
+        switch phase {
+        case .waiting: .white
+        case .oneMinute: .yellow
+        case .tenSeconds: .orange
+        case .late: .red
+        }
+    }
+}
+
+/// Under the transfer board: the speed needed to make it on time, live speed
+/// (green when at or above what's needed), and HR. Low need: ease off and let HR
+/// come down. High: haul.
+struct TransferRow: View {
+    let due: Date
+    let miles: Double?
+    let heartRate: HeartRateMonitor
     let location: LocationTracker
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            let needed = requiredMph(miles: miles, secondsLeft: due.timeIntervalSince(context.date))
+            let needed = miles.flatMap { requiredMph(miles: $0, secondsLeft: due.timeIntervalSince(context.date)) }
             let live = max(0, location.lastFix?.speed ?? 0) * 2.236936
             HStack {
-                BigStat(value: String(format: "%.1f", miles), label: "MI TO START",
-                        color: miles < 0 ? .yellow : .white)
-                BigStat(value: needed.map { String(format: "%.0f", $0) } ?? "LATE",
-                        label: "NEED MPH", color: needed == nil ? .red : .white)
-                BigStat(value: String(format: "%.0f", live), label: "MPH",
-                        color: needed.map { live >= $0 ? .green : .red } ?? .red)
+                if miles != nil {
+                    BigStat(value: needed.map { String(format: "%.0f", $0) } ?? "--", label: "NEED MPH", size: 44)
+                    BigStat(value: String(format: "%.0f", live), label: "MPH",
+                            color: needed.map { live >= $0 ? .green : .red } ?? .white, size: 44)
+                }
+                BigStat(value: heartRate.bpm.map(String.init) ?? "--", label: "HR", size: 44)
             }
         }
     }

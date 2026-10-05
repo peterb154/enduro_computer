@@ -32,5 +32,11 @@ nonisolated struct RideSettings {
     /// Pace for scoring tests that have no roll chart times entered.
     var sprintFallbackPaceMph: Double = 24
 
+    // Heart rate sources
+    /// A source with no reading for this long is stale; the backup takes over.
+    var hrStaleAfter: TimeInterval = 5
+    /// A "connected" source silent this long gets disconnected and reconnected.
+    var hrReconnectAfter: TimeInterval = 10
+
     static let standard = RideSettings()
 }

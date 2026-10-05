@@ -49,10 +49,10 @@ final class Ride {
         log?.append(.mark(name, at: .now))
     }
 
-    func add(heartRate: Int) {
+    func add(heartRate: Int, source: HeartRateRole = .primary) {
         guard isActive else { return }
         stats.add(heartRate: heartRate)
-        log?.append(.heartRate(heartRate, at: .now))
+        log?.append(.heartRate(heartRate, at: .now, source: source))
         lastHeartRate = heartRate > 0 ? heartRate : nil
         liveActivity.update(bpm: heartRate, distance: stats.distance)
     }

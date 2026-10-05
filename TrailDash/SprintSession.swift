@@ -159,9 +159,9 @@ final class SprintSession {
         log?.append(.mark(name, at: .now))
     }
 
-    func add(heartRate: Int) {
+    func add(heartRate: Int, source: HeartRateRole = .primary) {
         guard isSessionOpen else { return }
-        log?.append(.heartRate(heartRate, at: .now))
+        log?.append(.heartRate(heartRate, at: .now, source: source))
         timer.add(heartRate: heartRate)
     }
 

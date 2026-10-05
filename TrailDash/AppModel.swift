@@ -25,9 +25,9 @@ final class AppModel {
             ride.add(fix)
             sprint.add(fix)
         }
-        heartRate.onSample = { [ride, sprint] bpm in
-            ride.add(heartRate: bpm)
-            sprint.add(heartRate: bpm)
+        heartRate.onSample = { [ride, sprint] bpm, source in
+            ride.add(heartRate: bpm, source: source)
+            sprint.add(heartRate: bpm, source: source)
         }
         heartRate.onEvent = { [ride, sprint] name in
             ride.mark(name)

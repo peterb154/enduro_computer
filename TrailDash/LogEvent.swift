@@ -13,6 +13,8 @@ nonisolated struct LogEvent: Codable, Equatable {
     var alt: Double?
     var bpm: Int?
     var name: String?
+    /// HR source: "primary" or "backup". Missing in logs from before backup sources.
+    var src: String?
 
     var time: Date { Date(timeIntervalSince1970: t) }
 
@@ -22,8 +24,8 @@ nonisolated struct LogEvent: Codable, Equatable {
                  speed: fix.speed, course: fix.course, alt: fix.altitude)
     }
 
-    static func heartRate(_ bpm: Int, at time: Date) -> LogEvent {
-        LogEvent(t: time.timeIntervalSince1970, type: "hr", bpm: bpm)
+    static func heartRate(_ bpm: Int, at time: Date, source: HeartRateRole = .primary) -> LogEvent {
+        LogEvent(t: time.timeIntervalSince1970, type: "hr", bpm: bpm, src: source.rawValue)
     }
 
     static func mark(_ name: String, at time: Date) -> LogEvent {

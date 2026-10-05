@@ -8,3 +8,6 @@ DerivedData/
 build/
 .build/
 .DS_Store
+
+# Ride logs pulled off the phone (GPS tracks; keep out of git)
+logs/
